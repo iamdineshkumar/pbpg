@@ -63,7 +63,7 @@ export function logsList(logsSettings) {
 
             const result = await app.pb.logs.getList(page, perPage, {
                 skipTotal: 1,
-                sort: "-id",
+                sort: "-@rowid",
                 requestKey: "logs_list",
                 filter: normalizedFilter
                     .filter(Boolean)
@@ -359,9 +359,6 @@ export function logsList(logsSettings) {
                                                 id: "cb_" + log.id,
                                                 type: "checkbox",
                                                 checked: () => !!data.bulkSelected[log.id],
-                                                onclick: (e) => {
-                                                    e.target.__shiftKey = e.shiftKey;
-                                                },
                                                 onchange: (e) => {
                                                     let bulkSelected = Object.assign({}, data.bulkSelected);
 
@@ -388,7 +385,18 @@ export function logsList(logsSettings) {
                                                     data.bulkSelected = bulkSelected;
                                                 },
                                             }),
-                                            t.label({ htmlFor: "cb_" + log.id }),
+                                            t.label({
+                                                htmlFor: "cb_" + log.id,
+                                                // workaround https://github.com/pocketbase/pocketbase/issues/7771
+                                                onclick: (e) => {
+                                                    e.preventDefault();
+                                                    const input = document.getElementById(e.target.htmlFor);
+                                                    if (input) {
+                                                        input.__shiftKey = e.shiftKey;
+                                                        input.click();
+                                                    }
+                                                },
+                                            }),
                                         ),
                                     ),
                                     t.td({ className: "col-field-name-level" }, logLevel(log)),

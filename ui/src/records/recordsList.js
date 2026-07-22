@@ -593,9 +593,6 @@ window.app.components.recordsList = function(propsArg = {}) {
                                         type: "checkbox",
                                         id: () => uniqueId + record.id,
                                         checked: () => !!data.bulkSelected[record.id],
-                                        onclick: (e) => {
-                                            e.target.__shiftKey = e.shiftKey;
-                                        },
                                         onchange: (e) => {
                                             let bulkSelected = Object.assign({}, data.bulkSelected);
 
@@ -622,7 +619,18 @@ window.app.components.recordsList = function(propsArg = {}) {
                                             data.bulkSelected = bulkSelected;
                                         },
                                     }),
-                                    t.label({ htmlFor: uniqueId + record.id }),
+                                    t.label({
+                                        htmlFor: uniqueId + record.id,
+                                        // workaround https://github.com/pocketbase/pocketbase/issues/7771
+                                        onclick: (e) => {
+                                            e.preventDefault();
+                                            const input = document.getElementById(e.target.htmlFor);
+                                            if (input) {
+                                                input.__shiftKey = e.shiftKey;
+                                                input.click();
+                                            }
+                                        },
+                                    }),
                                 ),
                             ),
                             () => {

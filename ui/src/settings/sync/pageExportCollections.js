@@ -138,9 +138,6 @@ export function pageExportCollections(route) {
                                                     id: checkboxId,
                                                     type: "checkbox",
                                                     checked: () => !!data.bulkSelected[collection.id],
-                                                    onclick: (e) => {
-                                                        e.target.__shiftKey = e.shiftKey;
-                                                    },
                                                     onchange: (e) => {
                                                         let bulkSelected = Object.assign({}, data.bulkSelected);
 
@@ -167,7 +164,19 @@ export function pageExportCollections(route) {
                                                         data.bulkSelected = bulkSelected;
                                                     },
                                                 }),
-                                                t.label({ htmlFor: checkboxId }, collection.name),
+                                                t.label({
+                                                    htmlFor: checkboxId,
+                                                    textContent: () => collection.name,
+                                                    // workaround https://github.com/pocketbase/pocketbase/issues/7771
+                                                    onclick: (e) => {
+                                                        e.preventDefault();
+                                                        const input = document.getElementById(e.target.htmlFor);
+                                                        if (input) {
+                                                            input.__shiftKey = e.shiftKey;
+                                                            input.click();
+                                                        }
+                                                    },
+                                                }),
                                             ),
                                         );
                                     });

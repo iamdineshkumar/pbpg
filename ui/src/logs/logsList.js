@@ -89,8 +89,10 @@ export function logsList(logsSettings) {
             }
 
             logsSettings.isListLoading = false;
+            logsSettings.hasListItems = data.logs.length > 0;
 
             if (!logsSettings.isFirstLoadReady) {
+                await new Promise((r) => setTimeout(r, 0));
                 logsSettings.isFirstLoadReady = true;
             }
         } catch (err) {

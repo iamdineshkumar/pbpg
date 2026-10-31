@@ -71,6 +71,8 @@ github.com/pocketbase/ozzo-validation/v4 v4.3.0 h1:uKBDVma7bZqgR2a6AwE+k9hkuDFfi
 github.com/pocketbase/ozzo-validation/v4 v4.3.0/go.mod h1:6XNjSTw/Jb2F8LOkKO3oyzIWExbrGiYoS4uVxVwz90g=
 github.com/pocketbase/tygoja v0.1.0 h1:NJtUNHr5OlWdCyblKr8zPA9awmTv41t7LBro4EGcZ/Y=
 github.com/pocketbase/tygoja v0.1.0/go.mod h1:hKJWPGFqavk3cdTa47Qvs8g37lnfI57OYdVVbIqW5aE=
+github.com/postgresbase/dbx v1.13.0-pg h1:yZXbXfEXvWz6tFMRlJNxZtmMZd/JEYq18Yw8GDhajXo=
+github.com/postgresbase/dbx v1.13.0-pg/go.mod h1:4k1lz3fpHW1XhcuoY8Z2WRLEYwIjaR4iR0NSO11kEtw=
 github.com/remyoudompheng/bigfft v0.0.0-20230129092748-24d4a6f8daec h1:W09IVJc94icq4NjY3clb7Lk8O1qJ8BdBEF8z0ibU0rE=
 github.com/remyoudompheng/bigfft v0.0.0-20230129092748-24d4a6f8daec/go.mod h1:qqbHyh8v60DhA7CoWK5oRCqLrMHRGoxYCSS9EjAz6Eo=
 github.com/rogpeppe/go-internal v1.16.0 h1:O9DK+vNMDVGLr2BeZqmpLeMjiMNkuXfcqntWbZV6S5g=

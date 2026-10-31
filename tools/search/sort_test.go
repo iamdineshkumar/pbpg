@@ -1,7 +1,7 @@
 package search_test
 
 import (
-	"encoding/json"
+	"encoding/json/v2"
 	"fmt"
 	"testing"
 
@@ -31,7 +31,7 @@ func TestSortFieldBuildExpr(t *testing.T) {
 		// special @random field (ignore direction)
 		{search.SortField{"@random", search.SortDesc}, false, "RANDOM()"},
 		// special _rowid_ field
-		{search.SortField{"@rowid", search.SortDesc}, false, "[[ctid]] DESC"},
+		{search.SortField{"@rowid", search.SortDesc}, false, "[[_rowid_]] DESC"},
 	}
 
 	for _, s := range scenarios {
@@ -67,7 +67,7 @@ func TestParseSortFromString(t *testing.T) {
 	for _, s := range scenarios {
 		t.Run(s.value, func(t *testing.T) {
 			result := search.ParseSortFromString(s.value)
-			encoded, _ := json.Marshal(result)
+			encoded, _ := json.Marshal(result, json.Deterministic(true))
 			encodedStr := string(encoded)
 
 			if encodedStr != s.expected {

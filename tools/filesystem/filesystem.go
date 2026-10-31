@@ -3,6 +3,7 @@ package filesystem
 import (
 	"context"
 	"errors"
+	"fmt"
 	"image"
 	"io"
 	"mime/multipart"
@@ -15,28 +16,50 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/disintegration/imaging"
-	"github.com/fatih/color"
-	"github.com/gabriel-vasile/mimetype"
 	"github.com/postgresbase/pocketbase/tools/filesystem/blob"
 	"github.com/postgresbase/pocketbase/tools/filesystem/internal/fileblob"
 	"github.com/postgresbase/pocketbase/tools/filesystem/internal/s3blob"
 	"github.com/postgresbase/pocketbase/tools/filesystem/internal/s3blob/s3"
+	"github.com/postgresbase/pocketbase/tools/hook"
 	"github.com/postgresbase/pocketbase/tools/list"
 	"github.com/postgresbase/pocketbase/tools/routine"
+	"github.com/disintegration/imaging"
+	"github.com/fatih/color"
+	"github.com/gabriel-vasile/mimetype"
+	"github.com/spf13/cast"
 
-	// explicit webp decoder because disintegration/imaging does not support webp
+	// manually register the webp decoder because disintegration/imaging does not support webp
 	_ "golang.org/x/image/webp"
 )
 
 // note: the same as blob.ErrNotFound for backward compatibility with earlier versions
 var ErrNotFound = blob.ErrNotFound
 
-const metadataOriginalName = "original-filename"
+const MetadataOriginalName = "original-filename"
+
+type DeleteEvent struct {
+	hook.Event
+	Filesystem *System
+	FileKey    string
+}
+
+type NewWriterEvent struct {
+	hook.Event
+	Filesystem *System
+	FileKey    string
+	Options    *blob.WriterOptions
+	Writer     *blob.Writer // filled only after e.Next()
+}
+
+// @todo consider renaming
 
 type System struct {
 	ctx    context.Context
 	bucket *blob.Bucket
+
+	// @todo consider with the refactoring to bind on driver level
+	onNewWriter *hook.Hook[*NewWriterEvent]
+	onDelete    *hook.Hook[*DeleteEvent]
 }
 
 // NewS3 initializes a new S3 filesystem instance.
@@ -97,7 +120,41 @@ func (s *System) SetContext(ctx context.Context) {
 
 // Close releases any resources used for the related filesystem.
 func (s *System) Close() error {
+	if s.onNewWriter != nil {
+		s.onNewWriter.UnbindAll()
+		s.onNewWriter = nil
+	}
+
+	if s.onDelete != nil {
+		s.onDelete.UnbindAll()
+		s.onDelete = nil
+	}
+
 	return s.bucket.Close()
+}
+
+// OnNewWriter is a low level hook that is triggered on every new writer initialization
+// (aka. when attempting to create a new file with [system.NewWriter] or [system.Upload]).
+//
+// Note that currently it doesn't trigger on [System.Copy] but this may change in future releases.
+func (s *System) OnNewWriter() *hook.Hook[*NewWriterEvent] {
+	if s.onNewWriter == nil {
+		s.onNewWriter = &hook.Hook[*NewWriterEvent]{}
+	}
+
+	return s.onNewWriter
+}
+
+// OnDelete is a low level hook that is triggered on every [System.Delete] call.
+//
+// Note that the hook doesn't fire when a file is being overwritten
+// by a new one, because in that case [System.Delete] is not invoked.
+func (s *System) OnDelete() *hook.Hook[*DeleteEvent] {
+	if s.onDelete == nil {
+		s.onDelete = &hook.Hook[*DeleteEvent]{}
+	}
+
+	return s.onDelete
 }
 
 // Exists checks if file with fileKey path exists or not.
@@ -145,7 +202,7 @@ func (s *System) GetReuploadableFile(fileKey string, preserveName bool) (*File, 
 	}
 
 	name := path.Base(fileKey)
-	originalName := attrs.Metadata[metadataOriginalName]
+	originalName := attrs.Metadata[MetadataOriginalName]
 	if originalName == "" {
 		originalName = name
 	}
@@ -203,7 +260,7 @@ func (s *System) Upload(content []byte, fileKey string) error {
 		ContentType: mimetype.Detect(content).String(),
 	}
 
-	w, writerErr := s.bucket.NewWriter(s.ctx, fileKey, opts)
+	w, writerErr := s.NewWriter(fileKey, opts)
 	if writerErr != nil {
 		return writerErr
 	}
@@ -229,7 +286,10 @@ func (s *System) UploadFile(file *File, fileKey string) error {
 	}
 
 	// rewind
-	f.Seek(0, io.SeekStart)
+	_, err = f.Seek(0, io.SeekStart)
+	if err != nil {
+		return fmt.Errorf("failed to rewind: %w", err)
+	}
 
 	originalName := file.OriginalName
 	if len(originalName) > 255 {
@@ -240,11 +300,11 @@ func (s *System) UploadFile(file *File, fileKey string) error {
 	opts := &blob.WriterOptions{
 		ContentType: mt.String(),
 		Metadata: map[string]string{
-			metadataOriginalName: originalName,
+			MetadataOriginalName: originalName,
 		},
 	}
 
-	w, err := s.bucket.NewWriter(s.ctx, fileKey, opts)
+	w, err := s.NewWriter(fileKey, opts)
 	if err != nil {
 		return err
 	}
@@ -271,7 +331,10 @@ func (s *System) UploadMultipart(fh *multipart.FileHeader, fileKey string) error
 	}
 
 	// rewind
-	f.Seek(0, io.SeekStart)
+	_, err = f.Seek(0, io.SeekStart)
+	if err != nil {
+		return fmt.Errorf("failed to rewind: %w", err)
+	}
 
 	originalName := fh.Filename
 	if len(originalName) > 255 {
@@ -282,11 +345,11 @@ func (s *System) UploadMultipart(fh *multipart.FileHeader, fileKey string) error
 	opts := &blob.WriterOptions{
 		ContentType: mt.String(),
 		Metadata: map[string]string{
-			metadataOriginalName: originalName,
+			MetadataOriginalName: originalName,
 		},
 	}
 
-	w, err := s.bucket.NewWriter(s.ctx, fileKey, opts)
+	w, err := s.NewWriter(fileKey, opts)
 	if err != nil {
 		return err
 	}
@@ -300,11 +363,68 @@ func (s *System) UploadMultipart(fh *multipart.FileHeader, fileKey string) error
 	return w.Close()
 }
 
+// NewWriter returns a new blob.Writer instance allowing direct file
+// create from an io.Reader value.
+//
+// If a file with the specified fileKey already exists, it will be replaced.
+//
+// NB! Make sure to call `Close()` on the resulting writer after you are done working with it.
+//
+// Note: If you have a bytes slice, [filesystem.File], or a multipart header value,
+// you can check also the Upload* related methods as they are more user-friendly.
+//
+// Example:
+//
+//	content := strings.NewReader("Lorem ipsum dolor sit amet...")
+//
+//	fsys, _ := filesystem.NewLocal("dir")
+//	defer fsys.Close()
+//
+//	w, _ := fsys.NewWriter("example/file/key", nil)
+//	w.ReadFrom(content)
+//	w.Close()
+func (s *System) NewWriter(fileKey string, opts *blob.WriterOptions) (*blob.Writer, error) {
+	if s.onNewWriter == nil {
+		return s.bucket.NewWriter(s.ctx, fileKey, opts)
+	}
+
+	event := new(NewWriterEvent)
+	event.Filesystem = s
+	event.FileKey = fileKey
+	event.Options = opts
+
+	err := s.onNewWriter.Trigger(event, func(e *NewWriterEvent) error {
+		writer, err := e.Filesystem.bucket.NewWriter(e.Filesystem.ctx, e.FileKey, e.Options)
+		if err != nil {
+			return err
+		}
+
+		e.Writer = writer
+
+		return nil
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	return event.Writer, nil
+}
+
 // Delete deletes stored file at fileKey location.
 //
 // If the file doesn't exist returns ErrNotFound.
 func (s *System) Delete(fileKey string) error {
-	return s.bucket.Delete(s.ctx, fileKey)
+	if s.onDelete == nil {
+		return s.bucket.Delete(s.ctx, fileKey)
+	}
+
+	event := new(DeleteEvent)
+	event.Filesystem = s
+	event.FileKey = fileKey
+
+	return s.onDelete.Trigger(event, func(e *DeleteEvent) error {
+		return e.Filesystem.bucket.Delete(e.Filesystem.ctx, e.FileKey)
+	})
 }
 
 // DeletePrefix deletes everything starting with the specified prefix.
@@ -383,7 +503,7 @@ func (s *System) DeletePrefix(prefix string) []error {
 // A trailing slash will be appended to a non-empty dir string argument
 // to ensure that the checked prefix is a "directory".
 //
-// Returns "false" in case the has at least one file, otherwise - "true".
+// Returns "false" in case it has at least one file, otherwise - "true".
 func (s *System) IsEmptyDir(dir string) bool {
 	if dir != "" && !strings.HasSuffix(dir, "/") {
 		dir += "/"
@@ -418,11 +538,11 @@ var manualExtensionContentTypes = map[string]string{
 	// https://github.com/gabriel-vasile/mimetype/pull/113
 	".css": "text/css",
 
-	// https://github.com/postgresbase/pocketbase/issues/6597
+	// https://ganigeorgiev.com/pocketbase/discussions/6597
 	".js":  "text/javascript",
 	".mjs": "text/javascript",
 
-	// https://github.com/postgresbase/pocketbase/discussions/7467
+	// https://ganigeorgiev.com/pocketbase/discussions/7467
 	".xlsx": "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
 	".docx": "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
 	".pptx": "application/vnd.openxmlformats-officedocument.presentationml.presentation",
@@ -464,7 +584,7 @@ func (s *System) Serve(res http.ResponseWriter, req *http.Request, fileKey strin
 		extContentType = ct
 	}
 
-	setHeaderIfMissing(res, "Content-Disposition", disposition+"; filename="+name)
+	setHeaderIfMissing(res, "Content-Disposition", disposition+"; filename="+strconv.Quote(name))
 	setHeaderIfMissing(res, "Content-Type", extContentType)
 	setHeaderIfMissing(res, "Content-Security-Policy", "default-src 'none'; media-src 'self'; style-src 'unsafe-inline'; sandbox")
 
@@ -526,6 +646,28 @@ func (s *System) createThumb(originalKey, thumbKey, thumbSize string) error {
 	}
 	defer r.Close()
 
+	// check image dimensions to minimize excessive memory usage
+	config, _, err := image.DecodeConfig(r)
+	if err != nil {
+		return fmt.Errorf("image headers decoding failed: %w", err)
+	}
+
+	maxPixels := cast.ToInt64(os.Getenv("PB_THUMBS_MAX_SOURCE_PIXELS"))
+	if maxPixels <= 0 {
+		maxPixels = 100 << 20
+	}
+
+	currentDimensions := int64(config.Width) * int64(config.Height)
+	if currentDimensions > maxPixels {
+		return fmt.Errorf("the original image is too large (%dx%d) and exceeds the total max allowed %d pixels", config.Width, config.Height, maxPixels)
+	}
+
+	// rewind
+	_, err = r.Seek(0, io.SeekStart)
+	if err != nil {
+		return fmt.Errorf("failed to rewind reader after config decode: %w", err)
+	}
+
 	// create imaging object from the original reader
 	// (note: only the first frame for animated image formats)
 	img, decodeErr := imaging.Decode(r, imaging.AutoOrientation(true))
@@ -579,7 +721,7 @@ func (s *System) createThumb(originalKey, thumbKey, thumbSize string) error {
 	}
 
 	// open a thumb storage writer (aka. prepare for upload)
-	w, err := s.bucket.NewWriter(s.ctx, thumbKey, opts)
+	w, err := s.NewWriter(thumbKey, opts)
 	if err != nil {
 		return err
 	}

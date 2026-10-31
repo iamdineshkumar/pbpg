@@ -5,13 +5,13 @@ import (
 	"crypto/elliptic"
 	"crypto/rand"
 	"crypto/x509"
-	"encoding/json"
+	"encoding/json/v2"
 	"encoding/pem"
 	"testing"
 
-	"github.com/golang-jwt/jwt/v5"
 	"github.com/postgresbase/pocketbase/forms"
 	"github.com/postgresbase/pocketbase/tests"
+	"github.com/golang-jwt/jwt/v5"
 )
 
 func TestAppleClientSecretCreateValidateAndSubmit(t *testing.T) {

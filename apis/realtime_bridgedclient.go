@@ -48,7 +48,7 @@ func NewBridgedClient(bridge IRealtimeBridge, optionalSubscription ...*ClientSub
 	var subscription *ClientSubscription
 
 	if len(optionalSubscription) > 0 && optionalSubscription[0] != nil {
-		client = subscriptions.NewDefaultClient(optionalSubscription[0].ClientId)
+		client = subscriptions.NewDefaultClient()
 		subscription = optionalSubscription[0]
 	} else {
 		client = subscriptions.NewDefaultClient()
@@ -87,12 +87,17 @@ func (r *BridgedClient) BroadcastGoOffline() {
 }
 
 func (r *BridgedClient) BroadcastChanges() {
-	if len(r.RawSubscriptions()) == 0 {
+	subs := r.Subscriptions()
+	if len(subs) == 0 {
 		r.BroadcastGoOffline()
 		return
 	}
 
-	r.subscription.Subscriptions = r.RawSubscriptions()
+	subKeys := make([]string, 0, len(subs))
+	for s := range subs {
+		subKeys = append(subKeys, s)
+	}
+	r.subscription.Subscriptions = subKeys
 	r.subscription.UpdatedByChannelId = r.bridge.SelfChannelId()
 
 	var authSQL string

@@ -358,10 +358,10 @@ func TestDateTimeUnmarshalJSON(t *testing.T) {
 func TestDateTimeValue(t *testing.T) {
 	scenarios := []struct {
 		value    any
-		expected any
+		expected string
 	}{
-		{"", nil},
-		{"invalid", nil},
+		{"", ""},
+		{"invalid", ""},
 		{1641024040, "2022-01-01 08:00:40.000Z"},
 		{"2022-01-01 11:23:45.678", "2022-01-01 11:23:45.678Z"},
 		{types.NowDateTime(), types.NowDateTime().String()},
@@ -377,7 +377,7 @@ func TestDateTimeValue(t *testing.T) {
 			}
 
 			if result != s.expected {
-				t.Fatalf("Expected %v, got %v", s.expected, result)
+				t.Fatalf("Expected %q, got %q", s.expected, result)
 			}
 		})
 	}

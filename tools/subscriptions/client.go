@@ -1,7 +1,7 @@
 package subscriptions
 
 import (
-	"encoding/json"
+	"encoding/json/v2"
 	"net/url"
 	"strings"
 	"sync"
@@ -33,9 +33,6 @@ type Client interface {
 	// Subscriptions returns a shallow copy of the client subscriptions matching the prefixes.
 	// If no prefix is specified, returns all subscriptions.
 	Subscriptions(prefixes ...string) map[string]SubscriptionOptions
-
-	// RawSubscriptions returns a slice of all subscription strings that the client is subscribed to.
-	RawSubscriptions() []string
 
 	// Subscribe subscribes the client to the provided subscriptions list.
 	//
@@ -92,17 +89,9 @@ type DefaultClient struct {
 }
 
 // NewDefaultClient creates and returns a new DefaultClient instance.
-//
-// An optional clientId can be specified to set a custom client id (eg. for remote bridged clients).
-func NewDefaultClient(optionalClientId ...string) *DefaultClient {
-	var clientId string
-	if len(optionalClientId) > 0 && optionalClientId[0] != "" {
-		clientId = optionalClientId[0]
-	} else {
-		clientId = security.RandomString(40)
-	}
+func NewDefaultClient() *DefaultClient {
 	return &DefaultClient{
-		id:            clientId,
+		id:            security.RandomString(40),
 		store:         map[string]any{},
 		channel:       make(chan Message),
 		subscriptions: map[string]SubscriptionOptions{},
@@ -157,21 +146,6 @@ func (c *DefaultClient) Subscriptions(prefixes ...string) map[string]Subscriptio
 	}
 
 	return result
-}
-
-// RawSubscriptions implements the [Client.RawSubscriptions] interface method.
-//
-// It returns a slice of all subscription strings that the client is subscribed to.
-func (c *DefaultClient) RawSubscriptions() []string {
-	c.mu.RLock()
-	defer c.mu.RUnlock()
-
-	subs := make([]string, 0, len(c.subscriptions))
-	for key := range c.subscriptions {
-		subs = append(subs, key)
-	}
-
-	return subs
 }
 
 // Subscribe implements the [Client.Subscribe] interface method.

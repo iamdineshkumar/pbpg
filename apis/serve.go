@@ -12,12 +12,12 @@ import (
 	"sync"
 	"time"
 
-	"github.com/fatih/color"
 	"github.com/postgresbase/pocketbase/core"
 	"github.com/postgresbase/pocketbase/tools/hook"
 	"github.com/postgresbase/pocketbase/tools/list"
 	"github.com/postgresbase/pocketbase/tools/routine"
 	"github.com/postgresbase/pocketbase/ui"
+	"github.com/fatih/color"
 	"golang.org/x/crypto/acme"
 	"golang.org/x/crypto/acme/autocert"
 )
@@ -28,9 +28,6 @@ const defaultCSP = "default-src 'self'; style-src 'self' 'unsafe-inline'; img-sr
 type ServeConfig struct {
 	// ShowStartBanner indicates whether to show or hide the server start console message.
 	ShowStartBanner bool
-
-	// PathPrefix is an optional prefix to use for the API and dashboard routes.
-	PathPrefix string
 
 	// HttpAddr is the TCP address to listen for the HTTP server (eg. "127.0.0.1:80").
 	HttpAddr string
@@ -48,6 +45,9 @@ type ServeConfig struct {
 
 	// AllowedOrigins is an optional list of CORS origins (default to "*").
 	AllowedOrigins []string
+
+	// PathPrefix is an optional prefix to use for the API and dashboard routes.
+	PathPrefix string
 }
 
 // Serve starts a new app web server.
@@ -75,6 +75,10 @@ func Serve(app core.App, config ServeConfig) error {
 	pbRouter, err := NewRouter(app)
 	if err != nil {
 		return err
+	}
+
+	if config.PathPrefix != "" {
+		pbRouter.Prefix = config.PathPrefix
 	}
 
 	pbRouter.Bind(CORS(CORSConfig{
@@ -216,13 +220,14 @@ func Serve(app core.App, config ServeConfig) error {
 	serveEvent.CertManager = certManager
 	serveEvent.InstallerFunc = DefaultInstallerFunc
 
-	// Support path prefix for the API and dashboard routes.
-	if config.PathPrefix != "" {
-		pbRouter.Prefix = config.PathPrefix
+	if config.ShowStartBanner {
+		serveEvent.StartBannerFunc = defaultStartBannerFunc
 	}
 
 	// trigger the OnServe hook and start the tcp listener
 	serveHookErr := app.OnServe().Trigger(serveEvent, func(e *core.ServeEvent) error {
+		serveEvent = e
+
 		handler, err := e.Router.BuildMux()
 		if err != nil {
 			return err
@@ -281,25 +286,8 @@ func Serve(app core.App, config ServeConfig) error {
 		return errors.New("The OnServe listener was not initialized. Did you forget to call the ServeEvent.Next() method?")
 	}
 
-	if config.ShowStartBanner {
-		date := new(strings.Builder)
-		log.New(date, "", log.LstdFlags).Print()
-
-		bold := color.New(color.Bold).Add(color.FgGreen)
-		bold.Printf(
-			"%s Server started at %s\n",
-			strings.TrimSpace(date.String()),
-			color.CyanString("%s", baseURL),
-		)
-
-		regular := color.New()
-		displayURL := strings.ReplaceAll(baseURL, "0.0.0.0", "127.0.0.1") + config.PathPrefix
-		if ui.DistDirFS == nil {
-			regular.Printf("└─ REST API:  %s\n", color.CyanString("%s/api/", displayURL))
-		} else {
-			regular.Printf("├─ REST API:  %s\n", color.CyanString("%s/api/", displayURL))
-			regular.Printf("└─ Dashboard: %s\n", color.CyanString("%s/_/", displayURL))
-		}
+	if serveEvent.StartBannerFunc != nil {
+		serveEvent.StartBannerFunc(baseURL)
 	}
 
 	var serveErr error
@@ -320,6 +308,26 @@ func Serve(app core.App, config ServeConfig) error {
 	}
 
 	return nil
+}
+
+func defaultStartBannerFunc(baseURL string) {
+	date := new(strings.Builder)
+	log.New(date, "", log.LstdFlags).Print()
+
+	bold := color.New(color.Bold).Add(color.FgGreen)
+	bold.Printf(
+		"%s Server started at %s\n",
+		strings.TrimSpace(date.String()),
+		color.CyanString("%s", baseURL),
+	)
+
+	regular := color.New()
+	if ui.DistDirFS == nil {
+		regular.Printf("> REST API:  %s\n", color.CyanString("%s/api/", baseURL))
+	} else {
+		regular.Printf("> Dashboard: %s\n", color.CyanString("%s/_/", baseURL))
+		regular.Printf("> REST API:  %s\n", color.CyanString("%s/api/", baseURL))
+	}
 }
 
 // serverAddrToHost loosely converts http.Server.Addr string into a host to print.

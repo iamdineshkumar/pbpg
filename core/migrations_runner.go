@@ -5,9 +5,9 @@ import (
 	"strings"
 	"time"
 
-	"github.com/fatih/color"
 	"github.com/postgresbase/dbx"
 	"github.com/postgresbase/pocketbase/tools/osutils"
+	"github.com/fatih/color"
 	"github.com/spf13/cast"
 )
 

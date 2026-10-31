@@ -7,17 +7,11 @@ import (
 	"math/big"
 	"regexp/syntax"
 	"strings"
-
-	"github.com/google/uuid"
 )
 
 const defaultMaxRepeat = 6
 
 var anyCharNotNLPairs = []rune{'A', 'Z', 'a', 'z', '0', '9'}
-
-// PredefinedAutoGeneratePattern_uuidv7 is a special pattern that indicates
-// that the field should use UUID v7 for auto-generation.
-const PredefinedAutoGeneratePattern_uuidv7 = "<uuidv7>"
 
 // RandomStringByRegex generates a random string matching the regex pattern.
 // If optFlags is not set, fallbacks to [syntax.Perl].
@@ -31,10 +25,6 @@ const PredefinedAutoGeneratePattern_uuidv7 = "<uuidv7>"
 //
 // This function is inspired by github.com/pipe01/revregexp, github.com/lucasjones/reggen and other similar packages.
 func RandomStringByRegex(pattern string, optFlags ...syntax.Flags) (string, error) {
-	if pattern == PredefinedAutoGeneratePattern_uuidv7 {
-		id, _ := uuid.NewV7()
-		return id.String(), nil
-	}
 	var flags syntax.Flags
 	if len(optFlags) == 0 {
 		flags = syntax.Perl

@@ -3,7 +3,7 @@ package core
 import (
 	"context"
 
-	validation "github.com/pocketbase/ozzo-validation/v4"
+	validation "ganigeorgiev.com/pocketbase/ozzo-validation/v4"
 	"github.com/postgresbase/pocketbase/core/validators"
 	"github.com/postgresbase/pocketbase/tools/types"
 )
@@ -107,11 +107,7 @@ func (f *GeoPointField) SetHidden(hidden bool) {
 
 // ColumnType implements [Field.ColumnType] interface method.
 func (f *GeoPointField) ColumnType(app App) string {
-	/* SQLite:
 	return `JSON DEFAULT '{"lon":0,"lat":0}' NOT NULL`
-	*/
-	// PostgreSQL:
-	return `JSONB DEFAULT '{"lon":0,"lat":0}' NOT NULL`
 }
 
 // PrepareValue implements [Field.PrepareValue] interface method.

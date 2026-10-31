@@ -3,6 +3,7 @@ package search_test
 import (
 	"context"
 	"database/sql"
+	"errors"
 	"fmt"
 	"regexp"
 	"strings"
@@ -50,55 +51,55 @@ func TestFilterDataBuildExpr(t *testing.T) {
 			"simple expression",
 			"test1 > 1",
 			false,
-			"[[test1]] > 1",
+			"[[test1]] > {:TEST}",
 		},
 		{
 			"empty string vs null",
 			"'' = null && null != ''",
 			false,
-			"('' = '' AND '' IS DISTINCT FROM '')",
+			"('' = '' AND '' IS NOT '')",
 		},
 		{
 			"like with 2 columns",
 			"test1 ~ test2",
 			false,
-			"[[test1]]::text LIKE ('%' || [[test2]]::text || '%') ESCAPE '\\'",
+			"[[test1]] LIKE ('%' || [[test2]] || '%') ESCAPE '\\'",
 		},
 		{
 			"like with right column operand",
 			"'lorem' ~ test1",
 			false,
-			"{:TEST} LIKE ('%' || [[test1]]::text || '%') ESCAPE '\\'",
+			"{:TEST} LIKE ('%' || [[test1]] || '%') ESCAPE '\\'",
 		},
 		{
 			"like with left column operand and text as right operand",
 			"test1 ~ 'lorem'",
 			false,
-			"[[test1]]::text LIKE {:TEST} ESCAPE '\\'",
+			"[[test1]] LIKE {:TEST} ESCAPE '\\'",
 		},
 		{
 			"not like with 2 columns",
 			"test1 !~ test2",
 			false,
-			"[[test1]]::text NOT LIKE ('%' || [[test2]]::text || '%') ESCAPE '\\'",
+			"[[test1]] NOT LIKE ('%' || [[test2]] || '%') ESCAPE '\\'",
 		},
 		{
 			"not like with right column operand",
 			"'lorem' !~ test1",
 			false,
-			"{:TEST} NOT LIKE ('%' || [[test1]]::text || '%') ESCAPE '\\'",
+			"{:TEST} NOT LIKE ('%' || [[test1]] || '%') ESCAPE '\\'",
 		},
 		{
 			"like with left column operand and text as right operand",
 			"test1 !~ 'lorem'",
 			false,
-			"[[test1]]::text NOT LIKE {:TEST} ESCAPE '\\'",
+			"[[test1]] NOT LIKE {:TEST} ESCAPE '\\'",
 		},
 		{
 			"nested json no coalesce",
 			"test5.a = test5.b || test5.c != test5.d",
 			false,
-			"(JSON_QUERY([[test5]]::jsonb, '$.a')::jsonb IS NOT DISTINCT FROM JSON_QUERY([[test5]]::jsonb, '$.b')::jsonb OR JSON_QUERY([[test5]]::jsonb, '$.c')::jsonb IS DISTINCT FROM JSON_QUERY([[test5]]::jsonb, '$.d')::jsonb)",
+			"(JSON_EXTRACT([[test5]], '$.a') IS JSON_EXTRACT([[test5]], '$.b') OR JSON_EXTRACT([[test5]], '$.c') IS NOT JSON_EXTRACT([[test5]], '$.d'))",
 		},
 		{
 			"macros",
@@ -125,25 +126,25 @@ func TestFilterDataBuildExpr(t *testing.T) {
 			"complex expression",
 			"((test1 > 1) || (test2 != 2)) && test3 ~ '%%example' && test4_sub = null",
 			false,
-			"(([[test1]] > 1 OR [[test2]] IS DISTINCT FROM 2) AND [[test3]]::text LIKE {:TEST} ESCAPE '\\' AND ([[test4_sub]]::text = '' OR [[test4_sub]] IS NULL))",
+			"(([[test1]] > {:TEST} OR [[test2]] IS NOT {:TEST}) AND [[test3]] LIKE {:TEST} ESCAPE '\\' AND ([[test4_sub]] = '' OR [[test4_sub]] IS NULL))",
 		},
 		{
 			"combination of special literals (null, true, false)",
 			"test1=true && test2 != false && null = test3 || null != test4_sub",
 			false,
-			"([[test1]] = TRUE AND [[test2]] IS DISTINCT FROM FALSE AND ('' = [[test3]]::text OR [[test3]] IS NULL) OR ('' IS DISTINCT FROM [[test4_sub]]::text AND [[test4_sub]] IS NOT NULL))",
+			"([[test1]] = 1 AND [[test2]] IS NOT 0 AND ('' = [[test3]] OR [[test3]] IS NULL) OR ('' IS NOT [[test4_sub]] AND [[test4_sub]] IS NOT NULL))",
 		},
 		{
 			"all operators",
 			"(test1 = test2 || test2 != test3) && (test2 ~ 'example' || test2 !~ '%%abc') && 'switch1%%' ~ test1 && 'switch2' !~ test2 && test3 > 1 && test3 >= 0 && test3 <= 4 && 2 < 5",
 			false,
-			"((to_jsonb([[test1]]) IS NOT DISTINCT FROM to_jsonb([[test2]]) OR to_jsonb([[test2]]) IS DISTINCT FROM to_jsonb([[test3]])) AND ([[test2]]::text LIKE {:TEST} ESCAPE '\\' OR [[test2]]::text NOT LIKE {:TEST} ESCAPE '\\') AND {:TEST} LIKE ('%' || [[test1]]::text || '%') ESCAPE '\\' AND {:TEST} NOT LIKE ('%' || [[test2]]::text || '%') ESCAPE '\\' AND [[test3]] > 1 AND [[test3]] >= 0 AND [[test3]] <= 4 AND 2 < 5)",
+			"((COALESCE([[test1]], '') = COALESCE([[test2]], '') OR COALESCE([[test2]], '') IS NOT COALESCE([[test3]], '')) AND ([[test2]] LIKE {:TEST} ESCAPE '\\' OR [[test2]] NOT LIKE {:TEST} ESCAPE '\\') AND {:TEST} LIKE ('%' || [[test1]] || '%') ESCAPE '\\' AND {:TEST} NOT LIKE ('%' || [[test2]] || '%') ESCAPE '\\' AND [[test3]] > {:TEST} AND [[test3]] >= {:TEST} AND [[test3]] <= {:TEST} AND {:TEST} < {:TEST})",
 		},
 		{
 			"geoDistance function",
 			"geoDistance(1,2,3,4) < 567",
 			false,
-			"(6371 * acos(cos(radians(2)) * cos(radians(4)) * cos(radians(3) - radians(1)) + sin(radians(2)) * sin(radians(4)))) < 567",
+			"(6371 * acos(min(1, max(-1, cos(radians({:TEST})) * cos(radians({:TEST})) * cos(radians({:TEST}) - radians({:TEST})) + sin(radians({:TEST})) * sin(radians({:TEST})))))) < {:TEST}",
 		},
 	}
 
@@ -180,8 +181,12 @@ func TestFilterDataBuildExpr(t *testing.T) {
 }
 
 func TestFilterDataBuildExprWithParams(t *testing.T) {
-	db, cleanup := search.NewTestDBX()
-	defer cleanup()
+	// create a dummy db
+	sqlDB, err := sql.Open("sqlite", "file::memory:?cache=shared")
+	if err != nil {
+		t.Fatal(err)
+	}
+	db := dbx.NewFromDB(sqlDB, "sqlite")
 
 	calledQueries := []string{}
 	db.QueryLogFunc = func(ctx context.Context, t time.Duration, sql string, rows *sql.Rows, err error) {
@@ -238,11 +243,43 @@ func TestFilterDataBuildExprWithParams(t *testing.T) {
 		t.Fatalf("Expected 1 query, got %d", len(calledQueries))
 	}
 
-	expectedQuery := `SELECT * WHERE ([[test1]] = TRUE OR [[test2]] = FALSE OR [[test3a]] = 123.456 OR [[test3b]] = 123.456 OR ([[test4]]::text = '' OR [[test4]] IS NULL) OR [[test5]] = '""' OR [[test6]] = 'simple' OR [[test7]] = '''single_quotes''' OR [[test8]] = '"double_quotes"' OR [[test9]] = '''"quote_with_backslash\' OR [[test10]] = '2023-01-01 00:00:00 +0000 UTC' OR [[test11]] = '["a","''quote","\"quote"]' OR [[test12]] = '{"a":123,"b":"quote\""}' OR [[test13]] = 'a`
+	expectedQuery := `SELECT * WHERE ([[test1]] = 1 OR [[test2]] = 0 OR [[test3a]] = 123.456 OR [[test3b]] = 123.456 OR ([[test4]] = '' OR [[test4]] IS NULL) OR ([[test5]] = '' OR [[test5]] IS NULL) OR [[test6]] = 'simple' OR [[test7]] = '''single_quotes''' OR [[test8]] = '"double_quotes"' OR [[test9]] = '''"quote_with_backslash\' OR [[test10]] = '2023-01-01 00:00:00 +0000 UTC' OR [[test11]] = '["a","''quote","\"quote"]' OR [[test12]] = '{"a":123,"b":"quote\""}' OR [[test13]] = 'a`
 	expectedQuery += "\nb')"
 	if expectedQuery != calledQueries[0] {
 		t.Fatalf("Expected query \n%s, \ngot \n%s", expectedQuery, calledQueries[0])
 	}
+}
+
+type brokenJSON struct{}
+
+func (j brokenJSON) MarshalJSON() ([]byte, error) {
+	return nil, errors.New("test_error")
+}
+
+func TestFilterDataBuildExprWithParamsFallbackError(t *testing.T) {
+	t.Parallel()
+
+	resolver := search.NewSimpleFieldResolver("test")
+
+	filter := search.FilterData(`test = {:test}`)
+
+	t.Run("non-string type but valid json", func(t *testing.T) {
+		_, err := filter.BuildExpr(resolver, dbx.Params{
+			"test": map[string]any{"a": "123"},
+		})
+		if err != nil {
+			t.Fatal(err)
+		}
+	})
+
+	t.Run("non-string type but invalid json", func(t *testing.T) {
+		_, err := filter.BuildExpr(resolver, dbx.Params{
+			"test": brokenJSON{},
+		})
+		if err == nil {
+			t.Fatal("Expected filter build error, got nil")
+		}
+	})
 }
 
 func TestFilterDataBuildExprWithLimit(t *testing.T) {
@@ -275,8 +312,12 @@ func TestFilterDataBuildExprWithLimit(t *testing.T) {
 }
 
 func TestLikeParamsWrapping(t *testing.T) {
-	db, cleanup := search.NewTestDBX()
-	defer cleanup()
+	// create a dummy db
+	sqlDB, err := sql.Open("sqlite", "file::memory:?cache=shared")
+	if err != nil {
+		t.Fatal(err)
+	}
+	db := dbx.NewFromDB(sqlDB, "sqlite")
 
 	calledQueries := []string{}
 	db.QueryLogFunc = func(ctx context.Context, t time.Duration, sql string, rows *sql.Rows, err error) {
@@ -331,7 +372,7 @@ func TestLikeParamsWrapping(t *testing.T) {
 		t.Fatalf("Expected 1 query, got %d", len(calledQueries))
 	}
 
-	expectedQuery := `SELECT * WHERE ([[test1]]::text LIKE '%abc%' ESCAPE '\' OR [[test2]]::text LIKE 'ab%c' ESCAPE '\' OR [[test3]]::text LIKE '%ab\%c%' ESCAPE '\' OR [[test4]]::text LIKE '%ab\%c' ESCAPE '\' OR [[test5]]::text LIKE 'ab\\%c' ESCAPE '\' OR [[test6]]::text LIKE '%ab\\\%c%' ESCAPE '\' OR [[test7]]::text LIKE '%ab\_c%' ESCAPE '\' OR [[test8]]::text LIKE '%ab\_c%' ESCAPE '\' OR [[test9]]::text LIKE '%ab_c' ESCAPE '\' OR [[test10]]::text LIKE '%ab\\c%' ESCAPE '\' OR [[test11]]::text LIKE '%\_ab\\c\_%' ESCAPE '\' OR [[test12]]::text LIKE 'ab\c%' ESCAPE '\' OR [[test13]]::text LIKE '%a`
+	expectedQuery := `SELECT * WHERE ([[test1]] LIKE '%abc%' ESCAPE '\' OR [[test2]] LIKE 'ab%c' ESCAPE '\' OR [[test3]] LIKE '%ab\%c%' ESCAPE '\' OR [[test4]] LIKE '%ab\%c' ESCAPE '\' OR [[test5]] LIKE 'ab\\%c' ESCAPE '\' OR [[test6]] LIKE '%ab\\\%c%' ESCAPE '\' OR [[test7]] LIKE '%ab\_c%' ESCAPE '\' OR [[test8]] LIKE '%ab\_c%' ESCAPE '\' OR [[test9]] LIKE '%ab_c' ESCAPE '\' OR [[test10]] LIKE '%ab\\c%' ESCAPE '\' OR [[test11]] LIKE '%\_ab\\c\_%' ESCAPE '\' OR [[test12]] LIKE 'ab\c%' ESCAPE '\' OR [[test13]] LIKE '%a`
 	expectedQuery += "\n" + `b\\%' ESCAPE '\')`
 	if expectedQuery != calledQueries[0] {
 		t.Fatalf("Expected query \n%s, \ngot \n%s", expectedQuery, calledQueries[0])

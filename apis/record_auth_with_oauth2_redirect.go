@@ -1,7 +1,7 @@
 package apis
 
 import (
-	"encoding/json"
+	"encoding/json/v2"
 	"errors"
 	"net/http"
 	"strings"
@@ -66,7 +66,7 @@ func oauth2SubscriptionRedirect(e *core.RequestEvent) error {
 	}
 
 	// temporary store the Apple user's name so that it can be later retrieved with the authWithOAuth2 call
-	// (see https://github.com/postgresbase/pocketbase/issues/7090)
+	// (see https://ganigeorgiev.com/pocketbase/discussions/7090)
 	if data.AppleUser != "" && data.Error == "" && data.Code != "" {
 		nameErr := parseAndStoreAppleRedirectName(
 			e.App,

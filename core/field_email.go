@@ -5,8 +5,8 @@ import (
 	"slices"
 	"strings"
 
-	validation "github.com/pocketbase/ozzo-validation/v4"
-	"github.com/pocketbase/ozzo-validation/v4/is"
+	validation "ganigeorgiev.com/pocketbase/ozzo-validation/v4"
+	"ganigeorgiev.com/pocketbase/ozzo-validation/v4/is"
 	"github.com/postgresbase/pocketbase/core/validators"
 	"github.com/spf13/cast"
 )

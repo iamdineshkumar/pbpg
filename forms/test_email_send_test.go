@@ -5,7 +5,7 @@ import (
 	"strings"
 	"testing"
 
-	validation "github.com/pocketbase/ozzo-validation/v4"
+	validation "ganigeorgiev.com/pocketbase/ozzo-validation/v4"
 	"github.com/postgresbase/pocketbase/forms"
 	"github.com/postgresbase/pocketbase/tests"
 )

@@ -5,7 +5,6 @@ import (
 	"path/filepath"
 	"testing"
 
-	"github.com/postgresbase/pocketbase/core"
 	"github.com/spf13/cobra"
 )
 
@@ -143,10 +142,8 @@ func TestSkipBootstrap(t *testing.T) {
 	tempDir := filepath.Join(os.TempDir(), "temp_pb_data")
 	defer os.RemoveAll(tempDir)
 
-	pgURL := core.TestPostgresURL()
-
 	// already bootstrapped
-	app0 := NewWithConfig(Config{DefaultDataDir: tempDir, DefaultPostgresURL: pgURL})
+	app0 := NewWithConfig(Config{DefaultDataDir: tempDir})
 	app0.Bootstrap()
 	if v := app0.skipBootstrap(); !v {
 		t.Fatal("[bootstrapped] Expected true, got false")
@@ -155,7 +152,7 @@ func TestSkipBootstrap(t *testing.T) {
 	// unknown command
 	os.Args = os.Args[:1]
 	os.Args = append(os.Args, "demo")
-	app1 := NewWithConfig(Config{DefaultDataDir: tempDir, DefaultPostgresURL: pgURL})
+	app1 := NewWithConfig(Config{DefaultDataDir: tempDir})
 	app1.RootCmd.AddCommand(&cobra.Command{Use: "test"})
 	if v := app1.skipBootstrap(); !v {
 		t.Fatal("[unknown] Expected true, got false")
@@ -174,7 +171,7 @@ func TestSkipBootstrap(t *testing.T) {
 		// base flag
 		os.Args = os.Args[:1]
 		os.Args = append(os.Args, "--"+s.name)
-		app1 := NewWithConfig(Config{DefaultDataDir: tempDir, DefaultPostgresURL: pgURL})
+		app1 := NewWithConfig(Config{DefaultDataDir: tempDir})
 		if v := app1.skipBootstrap(); !v {
 			t.Fatalf("[--%s] Expected true, got false", s.name)
 		}
@@ -182,7 +179,7 @@ func TestSkipBootstrap(t *testing.T) {
 		// short flag
 		os.Args = os.Args[:1]
 		os.Args = append(os.Args, "-"+s.short)
-		app2 := NewWithConfig(Config{DefaultDataDir: tempDir, DefaultPostgresURL: pgURL})
+		app2 := NewWithConfig(Config{DefaultDataDir: tempDir})
 		if v := app2.skipBootstrap(); !v {
 			t.Fatalf("[-%s] Expected true, got false", s.short)
 		}
@@ -194,7 +191,7 @@ func TestSkipBootstrap(t *testing.T) {
 		os.Args = os.Args[:1]
 		os.Args = append(os.Args, "custom")
 		os.Args = append(os.Args, "--"+s.name)
-		app3 := NewWithConfig(Config{DefaultDataDir: tempDir, DefaultPostgresURL: pgURL})
+		app3 := NewWithConfig(Config{DefaultDataDir: tempDir})
 		app3.RootCmd.AddCommand(customCmd)
 		if v := app3.skipBootstrap(); v {
 			t.Fatalf("[--%s custom] Expected false, got true", s.name)
@@ -204,7 +201,7 @@ func TestSkipBootstrap(t *testing.T) {
 		os.Args = os.Args[:1]
 		os.Args = append(os.Args, "custom")
 		os.Args = append(os.Args, "-"+s.short)
-		app4 := NewWithConfig(Config{DefaultDataDir: tempDir, DefaultPostgresURL: pgURL})
+		app4 := NewWithConfig(Config{DefaultDataDir: tempDir})
 		app4.RootCmd.AddCommand(customCmd)
 		if v := app4.skipBootstrap(); v {
 			t.Fatalf("[-%s custom] Expected false, got true", s.short)

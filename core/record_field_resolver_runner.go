@@ -1,7 +1,7 @@
 package core
 
 import (
-	"encoding/json"
+	"encoding/json/v2"
 	"errors"
 	"fmt"
 	"reflect"
@@ -333,18 +333,14 @@ func (r *runner) processRequestBodyEachModifier(bodyField Field) (*search.Resolv
 	}
 
 	bodyItems := toSlice(r.resolver.requestInfo.Body[bodyField.GetName()])
-	bodyItemsRaw, err := json.Marshal(bodyItems)
+	bodyItemsRaw, err := json.Marshal(bodyItems, json.Deterministic(true))
 	if err != nil {
 		return nil, fmt.Errorf("cannot serialize the data for field %q", r.activeProps[2])
 	}
 
 	placeholder := "dataEach" + security.PseudorandomString(8)
 	cleanFieldName := inflector.Columnify(bodyField.GetName())
-	/* SQLite:
 	jeTable := fmt.Sprintf("json_each({:%s})", placeholder)
-	*/
-	// PostgreSQL:
-	jeTable := dbutils.JSONEachByPlaceholder(placeholder)
 	jeAlias := "__dataEach_je_" + cleanFieldName + r.resolver.joinAliasSuffix
 
 	err = r.resolver.registerJoin(jeTable, jeAlias, nil)
@@ -363,17 +359,12 @@ func (r *runner) processRequestBodyEachModifier(bodyField Field) (*search.Resolv
 
 	if r.withMultiMatch {
 		placeholder2 := "mm" + placeholder
-		/* SQLite:
 		jeTable2 := fmt.Sprintf("json_each({:%s})", placeholder2)
-		*/
-		// PostgreSQL:
-		jeTable2 := dbutils.JSONEachByPlaceholder(placeholder2)
 		jeAlias2 := "__mm_" + jeAlias
 
 		r.multiMatch.Joins = append(r.multiMatch.Joins, &search.Join{
 			TableName:  jeTable2,
 			TableAlias: jeAlias2,
-			On:         dbx.NewExp("1=1"),
 		})
 		r.multiMatch.Params[placeholder2] = bodyItemsRaw
 		r.multiMatch.ValueIdentifier = fmt.Sprintf("[[%s.value]]", jeAlias2)
@@ -545,7 +536,7 @@ func (r *runner) processActiveProps() (*search.ResolverResult, error) {
 				return nil, fmt.Errorf("failed to initialize back relation field %q", backField.GetName())
 			}
 			if backRelField.CollectionId != collection.Id {
-				// https://github.com/postgresbase/pocketbase/discussions/6590#discussioncomment-12496581
+				// https://ganigeorgiev.com/pocketbase/discussions/6590#discussioncomment-12496581
 				if r.nullifyMisingField {
 					return &search.ResolverResult{Identifier: "NULL"}, nil
 				}
@@ -726,7 +717,6 @@ func (r *runner) processActiveProps() (*search.ResolverResult, error) {
 				&search.Join{
 					TableName:  dbutils.JSONEach(prefixedFieldName2),
 					TableAlias: jeAlias2,
-					On:         dbx.NewExp("1=1"),
 				},
 				&search.Join{
 					TableName:  inflector.Columnify(newCollectionName),
@@ -809,7 +799,6 @@ func (r *runner) finalizeActivePropsProcessing(collection *Collection, prop stri
 			r.multiMatch.Joins = append(r.multiMatch.Joins, &search.Join{
 				TableName:  dbutils.JSONEach(jePair2),
 				TableAlias: jeAlias2,
-				On:         dbx.NewExp("1=1"),
 			})
 			r.multiMatch.ValueIdentifier = fmt.Sprintf("[[%s.value]]", jeAlias2)
 
@@ -843,7 +832,7 @@ func (r *runner) finalizeActivePropsProcessing(collection *Collection, prop stri
 
 	// wrap in json_extract to ensure that top-level primitives
 	// stored as json work correctly when compared to their SQL equivalent
-	// (https://github.com/postgresbase/pocketbase/issues/4068)
+	// (https://ganigeorgiev.com/pocketbase/discussions/4068)
 	if field.Type() == FieldTypeJSON {
 		result.NullFallback = search.NullFallbackDisabled
 		result.Identifier = dbutils.JSONExtract(r.activeTableAlias+"."+cleanFieldName, "")

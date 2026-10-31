@@ -6,8 +6,8 @@ import (
 	"fmt"
 	"net/http"
 
-	validation "github.com/pocketbase/ozzo-validation/v4"
-	"github.com/pocketbase/ozzo-validation/v4/is"
+	validation "ganigeorgiev.com/pocketbase/ozzo-validation/v4"
+	"ganigeorgiev.com/pocketbase/ozzo-validation/v4/is"
 	"github.com/postgresbase/pocketbase/core"
 	"github.com/postgresbase/pocketbase/mails"
 	"github.com/postgresbase/pocketbase/tools/routine"

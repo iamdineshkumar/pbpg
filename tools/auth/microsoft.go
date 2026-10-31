@@ -2,12 +2,12 @@ package auth
 
 import (
 	"context"
-	"encoding/json"
+	"encoding/json/v2"
 	"errors"
 	"slices"
 
-	"github.com/golang-jwt/jwt/v5"
 	"github.com/postgresbase/pocketbase/tools/types"
+	"github.com/golang-jwt/jwt/v5"
 	"github.com/spf13/cast"
 	"golang.org/x/oauth2"
 	"golang.org/x/oauth2/microsoft"

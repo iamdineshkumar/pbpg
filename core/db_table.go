@@ -3,7 +3,6 @@ package core
 import (
 	"database/sql"
 	"fmt"
-	"strings"
 
 	"github.com/postgresbase/dbx"
 )
@@ -12,18 +11,9 @@ import (
 func (app *BaseApp) TableColumns(tableName string) ([]string, error) {
 	columns := []string{}
 
-	/* SQLite:
 	err := app.ConcurrentDB().NewQuery("SELECT name FROM PRAGMA_TABLE_INFO({:tableName})").
 		Bind(dbx.Params{"tableName": tableName}).
 		Column(&columns)
-	*/
-	// PostgreSQL:
-	err := app.ConcurrentDB().NewQuery(`
-		SELECT column_name
-		FROM information_schema.columns
-		WHERE table_name = {:tableName}
-		  AND table_schema = current_schema()
-	`).Bind(dbx.Params{"tableName": tableName}).Column(&columns)
 
 	return columns, err
 }
@@ -44,7 +34,6 @@ type TableInfoRow struct {
 func (app *BaseApp) TableInfo(tableName string) ([]*TableInfoRow, error) {
 	info := []*TableInfoRow{}
 
-	/* SQLite:
 	err := app.ConcurrentDB().NewQuery("SELECT * FROM PRAGMA_TABLE_INFO({:tableName})").
 		Bind(dbx.Params{"tableName": tableName}).
 		All(&info)
@@ -57,45 +46,6 @@ func (app *BaseApp) TableInfo(tableName string) ([]*TableInfoRow, error) {
 	if len(info) == 0 {
 		return nil, fmt.Errorf("empty table info probably due to invalid or missing table %s", tableName)
 	}
-	*/
-	// PostgreSQL:
-	sql := `
-		SELECT 
-			ordinal_position - 1 AS cid,
-			c.column_name AS name,
-			data_type AS type,
-			CASE WHEN is_nullable = 'NO' THEN 1 ELSE 0 END AS notnull,
-			column_default AS dflt_value,
-			CASE WHEN pk.constraint_type = 'PRIMARY KEY' THEN 1 ELSE 0 END AS pk
-		FROM 
-			information_schema.columns c
-		LEFT JOIN (
-			SELECT 
-				ccu.column_name,
-				tc.constraint_type
-			FROM 
-				information_schema.table_constraints tc
-			JOIN 
-				information_schema.constraint_column_usage ccu ON tc.constraint_name = ccu.constraint_name
-			WHERE 
-				tc.constraint_type = 'PRIMARY KEY' AND 
-				tc.table_name = {:table_name} AND 
-				tc.table_schema = 'public'
-		) pk ON c.column_name = pk.column_name
-		WHERE 
-			c.table_name = {:table_name} AND 
-			c.table_schema = current_schema()
-		ORDER BY 
-			c.ordinal_position;     
-	`
-	err := app.ConcurrentDB().NewQuery(sql).Bind(dbx.Params{"table_name": tableName}).All(&info)
-	if err != nil {
-		return nil, err
-	}
-
-	if len(info) == 0 {
-		return nil, fmt.Errorf("empty table info probably due to invalid or missing table %s", tableName)
-	}
 
 	return info, nil
 }
@@ -105,11 +55,10 @@ func (app *BaseApp) TableInfo(tableName string) ([]*TableInfoRow, error) {
 // Note: This method doesn't return an error on nonexisting table.
 func (app *BaseApp) TableIndexes(tableName string) (map[string]string, error) {
 	indexes := []struct {
-		Name string `db:"indexname"`
-		Sql  string `db:"indexdef"`
+		Name string
+		Sql  string
 	}{}
 
-	/* SQLite:
 	err := app.ConcurrentDB().Select("name", "sql").
 		From("sqlite_master").
 		AndWhere(dbx.NewExp("sql is not null")).
@@ -118,20 +67,6 @@ func (app *BaseApp) TableIndexes(tableName string) (map[string]string, error) {
 			"tbl_name": tableName,
 		}).
 		All(&indexes)
-	*/
-	// PostgreSQL:
-	// Note: `sql is not null` is for filtering auto created primary indexes in SQLite.
-	// In PostgreSQL, we have to make subquery in 'pg_constraint` for the same purpose.
-	err := app.ConcurrentDB().NewQuery(`
-			SELECT indexname, indexdef
-			FROM pg_indexes
-			WHERE tablename = {:tableName}
-			AND indexname NOT IN (
-				SELECT conname
-				FROM pg_constraint
-				WHERE contype = 'p' AND conrelid = {:tableName}::regclass
-			);
-		`).Bind(dbx.Params{"tableName": tableName}).All(&indexes)
 	if err != nil {
 		return nil, err
 	}
@@ -152,20 +87,8 @@ func (app *BaseApp) TableIndexes(tableName string) (map[string]string, error) {
 // NB! Be aware that this method is vulnerable to SQL injection and the
 // "dangerousTableName" argument must come only from trusted input!
 func (app *BaseApp) DeleteTable(dangerousTableName string) error {
-	/* SQLite:
 	_, err := app.NonconcurrentDB().NewQuery(fmt.Sprintf(
 		"DROP TABLE IF EXISTS {{%s}}",
-		dangerousTableName,
-	)).Execute()
-	*/
-	// PostgreSQL:
-	// Note: We use "CASCADE" to drop all dependent objects (e.g. views, etc.) in PostgreSQL.
-	if strings.TrimSpace(dangerousTableName) == "" {
-		// Adding this check to prevent the keyword `CASCADE` being considered as a table name by PostgreSQL.
-		return fmt.Errorf("invalid table name")
-	}
-	_, err := app.NonconcurrentDB().NewQuery(fmt.Sprintf(
-		"DROP TABLE IF EXISTS {{%s}} CASCADE",
 		dangerousTableName,
 	)).Execute()
 
@@ -187,23 +110,12 @@ func (app *BaseApp) AuxHasTable(tableName string) bool {
 func (app *BaseApp) hasTable(db dbx.Builder, tableName string) bool {
 	var exists int
 
-	/* SQLite:
 	err := db.Select("(1)").
 		From("sqlite_schema").
 		AndWhere(dbx.HashExp{"type": []any{"table", "view"}}).
 		AndWhere(dbx.NewExp("LOWER([[name]])=LOWER({:tableName})", dbx.Params{"tableName": tableName})).
 		Limit(1).
 		Row(&exists)
-	*/
-	// PostgreSQL:
-	// Notes: both views and tables are included in `information_schema.tables`.
-	err := db.NewQuery(`
-		SELECT 1
-		FROM information_schema.tables
-		WHERE table_schema = current_schema()
-		  AND lower(table_name) = lower({:tableName})
-		LIMIT 1
-	`).Bind(dbx.Params{"tableName": tableName}).Row(&exists)
 
 	return err == nil && exists > 0
 }
@@ -218,14 +130,8 @@ func (app *BaseApp) AuxVacuum() error {
 	return app.vacuum(app.AuxNonconcurrentDB())
 }
 
-/* SQLite:
 func (app *BaseApp) vacuum(db dbx.Builder) error {
 	_, err := db.NewQuery("VACUUM").Execute()
 
 	return err
-}
-*/
-// PostgreSQL: VACUUM is not needed (handled automatically by PostgreSQL)
-func (app *BaseApp) vacuum(db dbx.Builder) error {
-	return nil
 }

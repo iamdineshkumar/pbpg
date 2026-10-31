@@ -2,17 +2,17 @@ package auth
 
 import (
 	"context"
-	"encoding/json"
+	"encoding/json/v2"
 	"errors"
 	"fmt"
 	"os"
 	"strconv"
 	"time"
 
-	"github.com/golang-jwt/jwt/v5"
 	"github.com/postgresbase/pocketbase/tools/auth/internal/jwk"
 	"github.com/postgresbase/pocketbase/tools/security"
 	"github.com/postgresbase/pocketbase/tools/types"
+	"github.com/golang-jwt/jwt/v5"
 	"github.com/spf13/cast"
 	"golang.org/x/oauth2"
 )
@@ -131,9 +131,9 @@ func (p *OIDC) FetchRawUserInfo(token *oauth2.Token) ([]byte, error) {
 }
 
 func (p *OIDC) parseIdToken(token *oauth2.Token) (jwt.MapClaims, error) {
-	idToken := token.Extra("id_token").(string)
+	idToken, _ := token.Extra("id_token").(string)
 	if idToken == "" {
-		return nil, errors.New("empty id_token")
+		return nil, errors.New("empty or invalid id_token")
 	}
 
 	claims := jwt.MapClaims{}

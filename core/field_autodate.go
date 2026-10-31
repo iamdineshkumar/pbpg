@@ -3,7 +3,7 @@ package core
 import (
 	"context"
 
-	validation "github.com/pocketbase/ozzo-validation/v4"
+	validation "ganigeorgiev.com/pocketbase/ozzo-validation/v4"
 	"github.com/postgresbase/pocketbase/core/validators"
 	"github.com/postgresbase/pocketbase/tools/types"
 )
@@ -106,11 +106,7 @@ func (f *AutodateField) SetHidden(hidden bool) {
 
 // ColumnType implements [Field.ColumnType] interface method.
 func (f *AutodateField) ColumnType(app App) string {
-	/* SQLite:
 	return "TEXT DEFAULT '' NOT NULL" // note: sqlite doesn't allow adding new columns with non-constant defaults
-	*/
-	// PostgreSQL:
-	return "TIMESTAMP DEFAULT NOW() NOT NULL"
 }
 
 // PrepareValue implements [Field.PrepareValue] interface method.

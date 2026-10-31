@@ -31,17 +31,13 @@ func (s *SortField) BuildExpr(fieldResolver FieldResolver) (string, error) {
 
 	// special case for the builtin SQLite rowid column
 	if s.Name == rowidSortKey {
-		/* SQLite:
 		return fmt.Sprintf("[[_rowid_]] %s", s.Direction), nil
-		*/
-		// PostgreSQL:
-		return fmt.Sprintf("[[ctid]] %s", s.Direction), nil
 	}
 
 	result, err := fieldResolver.Resolve(s.Name)
 
 	// invalidate empty fields and non-column identifiers
-	if err != nil || len(result.Params) > 0 || result.Identifier == "" || strings.ToLower(result.Identifier) == "null" {
+	if err != nil || len(result.Params) > 0 || result.Identifier == "" || strings.EqualFold(result.Identifier, "null") {
 		return "", fmt.Errorf("invalid sort field %q", s.Name)
 	}
 

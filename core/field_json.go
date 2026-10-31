@@ -2,12 +2,14 @@ package core
 
 import (
 	"context"
+	"encoding/json/jsontext"
+	"encoding/json/v2"
 	"slices"
 	"strconv"
 	"strings"
 
-	validation "github.com/pocketbase/ozzo-validation/v4"
-	"github.com/pocketbase/ozzo-validation/v4/is"
+	validation "ganigeorgiev.com/pocketbase/ozzo-validation/v4"
+	"ganigeorgiev.com/pocketbase/ozzo-validation/v4/is"
 	"github.com/postgresbase/pocketbase/core/validators"
 	"github.com/postgresbase/pocketbase/tools/types"
 )
@@ -112,11 +114,7 @@ func (f *JSONField) SetHidden(hidden bool) {
 
 // ColumnType implements [Field.ColumnType] interface method.
 func (f *JSONField) ColumnType(app App) string {
-	/* SQLite:
 	return "JSON DEFAULT NULL"
-	*/
-	// PostgreSQL:
-	return "JSONB DEFAULT NULL"
 }
 
 // PrepareValue implements [Field.PrepareValue] interface method.
@@ -173,6 +171,18 @@ func (f *JSONField) ValidateValue(ctx context.Context, app App, record *Record) 
 
 	if is.JSON.Validate(raw) != nil {
 		return validation.NewError("validation_invalid_json", "Must be a valid json value")
+	}
+
+	// temp extra encoding/json/v2 check since the above validator is
+	// still using the v1 semantics
+	//
+	// @todo remove after updating the string validator
+	if len(raw) > 0 {
+		var dummy any
+		err := json.Unmarshal(raw, &dummy, jsontext.AllowInvalidUTF8(true))
+		if err != nil {
+			return validation.NewError("validation_invalid_json", "Must be a valid json value")
+		}
 	}
 
 	rawStr := strings.TrimSpace(raw.String())

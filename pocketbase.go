@@ -1,6 +1,7 @@
 package pocketbase
 
 import (
+	"errors"
 	"io"
 	"os"
 	"os/signal"
@@ -10,7 +11,6 @@ import (
 	"syscall"
 	"time"
 
-	"github.com/fatih/color"
 	"github.com/postgresbase/pocketbase/cmd"
 	"github.com/postgresbase/pocketbase/core"
 	"github.com/postgresbase/pocketbase/tools/hook"
@@ -67,7 +67,6 @@ type Config struct {
 	AuxMaxIdleConns  int                // default to core.DefaultAuxMaxIdleConns
 	DBConnect        core.DBConnectFunc // default to core.dbConnect
 
-	// PostgreSQL configurations
 	DefaultPostgresURL    string // eg: "postgres://user:pass@localhost:5432?sslmode=disable"
 	DefaultPostgresDataDb string // eg: "pb-data"
 	DefaultPostgresAuxDb  string // eg: "pb-auxiliary"
@@ -100,10 +99,12 @@ func New() *PocketBase {
 func NewWithConfig(config Config) *PocketBase {
 	// initialize a default data directory based on the executable baseDir
 	if config.DefaultDataDir == "" {
-		if config.DefaultDataDir = os.Getenv("PB_DATA_DIR"); config.DefaultDataDir == "" {
-			baseDir, _ := inspectRuntime()
-			config.DefaultDataDir = filepath.Join(baseDir, "pb_data")
-		}
+		baseDir, _ := inspectRuntime()
+		config.DefaultDataDir = filepath.Join(baseDir, "pb_data")
+	}
+
+	if config.DefaultQueryTimeout == 0 {
+		config.DefaultQueryTimeout = core.DefaultQueryTimeout
 	}
 
 	if config.DefaultPostgresURL == "" {
@@ -111,26 +112,25 @@ func NewWithConfig(config Config) *PocketBase {
 			config.DefaultPostgresURL = "postgres://user:pass@127.0.0.1:5432/postgres?sslmode=disable"
 		}
 	}
+
 	if config.DefaultPostgresDataDb == "" {
 		if config.DefaultPostgresDataDb = os.Getenv("POSTGRES_DATA_DB"); config.DefaultPostgresDataDb == "" {
 			config.DefaultPostgresDataDb = "pb-data"
 		}
 	}
+
 	if config.DefaultPostgresAuxDb == "" {
 		if config.DefaultPostgresAuxDb = os.Getenv("POSTGRES_AUX_DB"); config.DefaultPostgresAuxDb == "" {
 			config.DefaultPostgresAuxDb = "pb-auxiliary"
 		}
 	}
+
 	if !config.DefaultRealtimeBridge {
 		if enable, err := strconv.ParseBool(os.Getenv("PB_REALTIME_BRIDGE")); err == nil {
 			config.DefaultRealtimeBridge = enable
 		} else {
 			config.DefaultRealtimeBridge = true
 		}
-	}
-
-	if config.DefaultQueryTimeout == 0 {
-		config.DefaultQueryTimeout = core.DefaultQueryTimeout
 	}
 
 	executableName := filepath.Base(os.Args[0])
@@ -148,18 +148,19 @@ func NewWithConfig(config Config) *PocketBase {
 				DisableDefaultCmd: true,
 			},
 		},
-		devFlag:            config.DefaultDev,
-		dataDirFlag:        config.DefaultDataDir,
-		encryptionEnvFlag:  config.DefaultEncryptionEnv,
-		hideStartBanner:    config.HideStartBanner,
+		devFlag:           config.DefaultDev,
+		dataDirFlag:       config.DefaultDataDir,
+		encryptionEnvFlag: config.DefaultEncryptionEnv,
+		hideStartBanner:   config.HideStartBanner,
 		postgresUrlFlag:    config.DefaultPostgresURL,
 		postgresDataDbFlag: config.DefaultPostgresDataDb,
 		postgresAuxDbFlag:  config.DefaultPostgresAuxDb,
 		realtimeBridgeFlag: config.DefaultRealtimeBridge,
 	}
 
-	// replace with a colored stderr writer
-	pb.RootCmd.SetErr(newErrWriter())
+	// don't write command errors to the stderr because the error is
+	// propagated back to the app.Start() and could result in duplication
+	pb.RootCmd.SetErr(&nopWrite{})
 
 	// parse base flags
 	// (errors are ignored, since the full flags parsing happens on Execute())
@@ -176,7 +177,6 @@ func NewWithConfig(config Config) *PocketBase {
 		AuxMaxOpenConns:  config.AuxMaxOpenConns,
 		AuxMaxIdleConns:  config.AuxMaxIdleConns,
 		DBConnect:        config.DBConnect,
-
 		PostgresURL:      pb.postgresUrlFlag,
 		PostgresDataDB:   pb.postgresDataDbFlag,
 		PostgresAuxDB:    pb.postgresAuxDbFlag,
@@ -186,7 +186,7 @@ func NewWithConfig(config Config) *PocketBase {
 	// hide the default help command (allow only `--help` flag)
 	pb.RootCmd.SetHelpCommand(&cobra.Command{Hidden: true})
 
-	// https://github.com/postgresbase/pocketbase/issues/6136
+	// https://ganigeorgiev.com/pocketbase/discussions/6136
 	pb.OnBootstrap().Bind(&hook.Handler[*core.BootstrapEvent]{
 		Id: ModerncDepsCheckHookId,
 		Func: func(be *core.BootstrapEvent) error {
@@ -229,26 +229,25 @@ func (pb *PocketBase) Execute() error {
 		}
 	}
 
-	done := make(chan bool, 1)
+	execCh := make(chan error, 1)
+	sigCh := make(chan os.Signal, 1)
 
 	// listen for interrupt signal to gracefully shutdown the application
-	go func() {
-		sigch := make(chan os.Signal, 1)
-		signal.Notify(sigch, os.Interrupt, syscall.SIGTERM)
-		<-sigch
-
-		done <- true
-	}()
+	signal.Notify(sigCh, os.Interrupt, syscall.SIGTERM)
 
 	// execute the root command
 	go func() {
-		// note: leave to the commands to decide whether to print their error
-		pb.RootCmd.Execute()
-
-		done <- true
+		execCh <- routine.SafeWrap(pb.RootCmd.Execute)()
 	}()
 
-	<-done
+	// wait for either an OS signal or the command to complete
+	var execErr error
+	select {
+	case <-sigCh:
+	case execErr = <-execCh:
+	}
+
+	signal.Stop(sigCh)
 
 	// trigger cleanups
 	//
@@ -256,7 +255,7 @@ func (pb *PocketBase) Execute() error {
 	event := new(core.TerminateEvent)
 	event.App = pb
 	return pb.OnTerminate().Trigger(event, func(e *core.TerminateEvent) error {
-		return e.App.ResetBootstrapState()
+		return errors.Join(e.App.ClearBootstrap(), execErr)
 	})
 }
 
@@ -295,28 +294,28 @@ func (pb *PocketBase) eagerParseFlags(config *Config) error {
 		&pb.postgresUrlFlag,
 		"postgresUrl",
 		config.DefaultPostgresURL,
-		"the PostgreSQL connection string (if not set, will fallback to the POSTGRES_URL env variable)",
+		"the PostgreSQL connection URL",
 	)
 
 	pb.RootCmd.PersistentFlags().StringVar(
 		&pb.postgresDataDbFlag,
 		"postgresDataDB",
 		config.DefaultPostgresDataDb,
-		"the PostgreSQL data database name (if not set, will fallback to the POSTGRES_DATA_DB env variable)",
+		"the name of the main PostgreSQL data database",
 	)
 
 	pb.RootCmd.PersistentFlags().StringVar(
 		&pb.postgresAuxDbFlag,
 		"postgresAuxDB",
 		config.DefaultPostgresAuxDb,
-		"the PostgreSQL auxiliary database name (if not set, will fallback to the POSTGRES_AUX_DB env variable)",
+		"the name of the PostgreSQL auxiliary database",
 	)
 
 	pb.RootCmd.PersistentFlags().BoolVar(
 		&pb.realtimeBridgeFlag,
 		"realtimeBridge",
 		config.DefaultRealtimeBridge,
-		"enable realtime bridge for horizontal scaling via PostgreSQL LISTEN/NOTIFY (if not set, will fallback to the PB_REALTIME_BRIDGE env variable)",
+		"enable the realtime bridge mode for horizontal scaling",
 	)
 
 	return pb.RootCmd.ParseFlags(os.Args[1:])
@@ -328,8 +327,8 @@ func (pb *PocketBase) eagerParseFlags(config *Config) error {
 // - is the default help command
 // - is the default version command
 //
-// https://github.com/postgresbase/pocketbase/issues/404
-// https://github.com/postgresbase/pocketbase/discussions/1267
+// https://ganigeorgiev.com/pocketbase/discussions/404
+// https://ganigeorgiev.com/pocketbase/discussions/1267
 func (pb *PocketBase) skipBootstrap() bool {
 	flags := []string{
 		"-h",
@@ -382,24 +381,10 @@ func inspectRuntime() (baseDir string, withGoRun bool) {
 	return
 }
 
-// newErrWriter returns a red colored stderr writter.
-func newErrWriter() *coloredWriter {
-	return &coloredWriter{
-		w: os.Stderr,
-		c: color.New(color.FgRed),
-	}
-}
+var _ io.Writer = (*nopWrite)(nil)
 
-// coloredWriter is a small wrapper struct to construct a [color.Color] writter.
-type coloredWriter struct {
-	w io.Writer
-	c *color.Color
-}
+type nopWrite struct{}
 
-// Write writes the p bytes using the colored writer.
-func (colored *coloredWriter) Write(p []byte) (n int, err error) {
-	colored.c.SetWriter(colored.w)
-	defer colored.c.UnsetWriter(colored.w)
-
-	return colored.c.Print(string(p))
+func (w *nopWrite) Write(p []byte) (n int, err error) {
+	return
 }

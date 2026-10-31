@@ -6,7 +6,7 @@ import (
 	"strings"
 
 	"github.com/postgresbase/dbx"
-	validation "github.com/pocketbase/ozzo-validation/v4"
+	validation "ganigeorgiev.com/pocketbase/ozzo-validation/v4"
 	"github.com/postgresbase/pocketbase/tools/dbutils"
 	"github.com/postgresbase/pocketbase/tools/security"
 )

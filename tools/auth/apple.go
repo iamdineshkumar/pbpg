@@ -2,13 +2,13 @@ package auth
 
 import (
 	"context"
-	"encoding/json"
+	"encoding/json/v2"
 	"errors"
 	"fmt"
 
-	"github.com/golang-jwt/jwt/v5"
 	"github.com/postgresbase/pocketbase/tools/auth/internal/jwk"
 	"github.com/postgresbase/pocketbase/tools/types"
+	"github.com/golang-jwt/jwt/v5"
 	"github.com/spf13/cast"
 	"golang.org/x/oauth2"
 )

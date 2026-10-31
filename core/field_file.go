@@ -9,7 +9,7 @@ import (
 	"regexp"
 	"strings"
 
-	validation "github.com/pocketbase/ozzo-validation/v4"
+	validation "ganigeorgiev.com/pocketbase/ozzo-validation/v4"
 	"github.com/postgresbase/pocketbase/core/validators"
 	"github.com/postgresbase/pocketbase/tools/filesystem"
 	"github.com/postgresbase/pocketbase/tools/list"
@@ -192,11 +192,7 @@ func (f *FileField) IsMultiple() bool {
 // ColumnType implements [Field.ColumnType] interface method.
 func (f *FileField) ColumnType(app App) string {
 	if f.IsMultiple() {
-		/* SQLite:
 		return "JSON DEFAULT '[]' NOT NULL"
-		*/
-		// PostgreSQL:
-		return "JSONB DEFAULT '[]' NOT NULL"
 	}
 
 	return "TEXT DEFAULT '' NOT NULL"

@@ -2,7 +2,7 @@ package apis
 
 import (
 	"context"
-	"encoding/json"
+	"encoding/json/v2"
 	"errors"
 	"fmt"
 	"log/slog"
@@ -11,7 +11,7 @@ import (
 	"time"
 
 	"github.com/postgresbase/dbx"
-	validation "github.com/pocketbase/ozzo-validation/v4"
+	validation "ganigeorgiev.com/pocketbase/ozzo-validation/v4"
 	"github.com/postgresbase/pocketbase/core"
 	"github.com/postgresbase/pocketbase/tools/hook"
 	"github.com/postgresbase/pocketbase/tools/picker"
@@ -37,10 +37,6 @@ func bindRealtimeApi(app core.App, rg *router.RouterGroup[*core.RequestEvent]) {
 	sub.GET("", realtimeConnect).Bind(SkipSuccessActivityLog())
 	sub.POST("", realtimeSetSubscriptions)
 
-	if app.IsRealtimeBridgeEnabled() {
-		bindRealtimeBridge(app)
-	}
-
 	bindRealtimeEvents(app)
 }
 
@@ -64,7 +60,7 @@ func realtimeConnect(e *core.RequestEvent) error {
 
 	e.Response.Header().Set("Content-Type", "text/event-stream")
 	e.Response.Header().Set("Cache-Control", "no-store")
-	// https://github.com/postgresbase/pocketbase/discussions/480#discussioncomment-3657640
+	// https://ganigeorgiev.com/pocketbase/discussions/480#discussioncomment-3657640
 	// https://nginx.org/en/docs/http/ngx_http_proxy_module.html#proxy_buffering
 	e.Response.Header().Set("X-Accel-Buffering", "no")
 
@@ -74,11 +70,6 @@ func realtimeConnect(e *core.RequestEvent) error {
 	connectEvent.MaxTimeout = 30 * time.Minute
 	connectEvent.Client = subscriptions.NewDefaultClient()
 
-	// use bridged client if realtime bridge is enabled
-	if realtimeBridge, ok := e.App.Store().Get(RealtimeBridgeInstanceKey).(IRealtimeBridge); ok {
-		connectEvent.Client = NewBridgedClient(realtimeBridge)
-	}
-
 	// could be used as an optional cross-reference check in other API endpoints
 	connectEvent.Client.Set(RealtimeClientIPKey, e.RealIP())
 
@@ -87,10 +78,6 @@ func realtimeConnect(e *core.RequestEvent) error {
 		ce.App.SubscriptionsBroker().Register(ce.Client)
 		defer func() {
 			e.App.SubscriptionsBroker().Unregister(ce.Client.Id())
-
-			if syncClient, ok := ce.Client.(IBridgedClient); ok {
-				syncClient.BroadcastGoOffline()
-			}
 		}()
 
 		ce.App.Logger().Debug("Realtime connection established", slog.String("clientId", ce.Client.Id()))
@@ -255,10 +242,6 @@ func realtimeSetSubscriptions(e *core.RequestEvent) error {
 			slog.Any("subscriptions", e.Subscriptions),
 		)
 
-		if syncClient, ok := e.Client.(IBridgedClient); ok {
-			syncClient.BroadcastChanges()
-		}
-
 		return execAfterSuccessTx(true, e.App, func() error {
 			return e.NoContent(http.StatusNoContent)
 		})
@@ -288,10 +271,6 @@ func realtimeUpdateClientsAuth(app core.App, authRecord *core.Record) error {
 					} else {
 						client.Set(RealtimeClientAuthKey, authRecord)
 					}
-
-					if syncClient, ok := client.(IBridgedClient); ok {
-						syncClient.BroadcastChanges()
-					}
 				}
 			}
 
@@ -316,10 +295,6 @@ func realtimeUnsetClientsAuthByRecordModelOrProxy(app core.App, authModel core.M
 					clientAuth.Id == authModel.PK() &&
 					clientAuth.Collection().Name == authModel.TableName() {
 					client.Unset(RealtimeClientAuthKey)
-
-					if syncClient, ok := client.(IBridgedClient); ok {
-						syncClient.BroadcastChanges()
-					}
 				}
 			}
 
@@ -686,7 +661,7 @@ func realtimeBroadcastRecord(app core.App, action string, record *core.Record, d
 						// can be reused here too to avoid eventual future
 						// discrepencies in the record event data
 						//
-						// https://github.com/postgresbase/pocketbase/issues/7721
+						// https://ganigeorgiev.com/pocketbase/discussions/7721
 						// -------------------------------------------
 
 						// enable hidden fields for superuser subscribers

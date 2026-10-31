@@ -6,7 +6,7 @@ import (
 	"regexp"
 	"strings"
 
-	validation "github.com/pocketbase/ozzo-validation/v4"
+	validation "ganigeorgiev.com/pocketbase/ozzo-validation/v4"
 	"github.com/postgresbase/pocketbase/core/validators"
 	"github.com/postgresbase/pocketbase/tools/list"
 )
@@ -227,7 +227,7 @@ func DefaultFieldIdValidationRule(value any) error {
 
 // exclude special filter and system literals
 var excludeNames = append([]any{
-	"null", "true", "false", "_rowid_", "ctid",
+	"null", "true", "false", "_rowid_",
 }, list.ToInterfaceSlice(SystemDynamicFieldNames)...)
 
 // DefaultFieldIdValidationRule performs base validation on a field name value.

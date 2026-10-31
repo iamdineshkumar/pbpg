@@ -5,7 +5,7 @@ import (
 	"database/sql/driver"
 	"slices"
 
-	validation "github.com/pocketbase/ozzo-validation/v4"
+	validation "ganigeorgiev.com/pocketbase/ozzo-validation/v4"
 	"github.com/postgresbase/pocketbase/tools/list"
 	"github.com/postgresbase/pocketbase/tools/types"
 )
@@ -142,11 +142,7 @@ func (f *SelectField) IsMultiple() bool {
 // ColumnType implements [Field.ColumnType] interface method.
 func (f *SelectField) ColumnType(app App) string {
 	if f.IsMultiple() {
-		/* SQLite:
 		return "JSON DEFAULT '[]' NOT NULL"
-		*/
-		// PostgreSQL:
-		return "JSONB DEFAULT '[]' NOT NULL"
 	}
 
 	return "TEXT DEFAULT '' NOT NULL"

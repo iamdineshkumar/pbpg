@@ -4,7 +4,7 @@ import (
 	"errors"
 	"fmt"
 
-	validation "github.com/pocketbase/ozzo-validation/v4"
+	validation "ganigeorgiev.com/pocketbase/ozzo-validation/v4"
 	"github.com/postgresbase/pocketbase/core"
 	"github.com/postgresbase/pocketbase/tools/filesystem"
 	"github.com/postgresbase/pocketbase/tools/security"

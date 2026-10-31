@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"github.com/postgresbase/pocketbase/tools/auth"
+	"github.com/postgresbase/pocketbase/tools/filesystem"
 	"github.com/postgresbase/pocketbase/tools/hook"
 	"github.com/postgresbase/pocketbase/tools/mailer"
 	"github.com/postgresbase/pocketbase/tools/router"
@@ -134,6 +135,15 @@ type ServeEvent struct {
 	//
 	// UIExtensions is a list with the superuser UI extensions.
 	UIExtensions []UIExtension
+
+	// StartBannerFunc defines a custom console startup banner.
+	//
+	// If not set, defaults to the system one that prints the
+	// current HTTP API and dashboard addresses.
+	//
+	// Assign StartBannerFunc to a function with an empty body if you
+	// want to disable the console print entirely.
+	StartBannerFunc func(baseURL string)
 }
 
 type UIExtension struct {
@@ -186,6 +196,24 @@ type MailerRecordEvent struct {
 	MailerEvent
 	baseRecordEventData
 	Meta map[string]any
+}
+
+// -------------------------------------------------------------------
+// Filesystem events data
+// -------------------------------------------------------------------
+
+type FilesystemNewWriterEvent struct {
+	hook.Event
+	*filesystem.NewWriterEvent
+
+	App App
+}
+
+type FilesystemDeleteEvent struct {
+	hook.Event
+	*filesystem.DeleteEvent
+
+	App App
 }
 
 // -------------------------------------------------------------------

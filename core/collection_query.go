@@ -3,7 +3,7 @@ package core
 import (
 	"bytes"
 	"database/sql"
-	"encoding/json"
+	"encoding/json/v2"
 	"errors"
 	"fmt"
 	"slices"
@@ -38,12 +38,7 @@ func (app *BaseApp) FindAllCollections(collectionTypes ...string) ([]*Collection
 		q.AndWhere(dbx.In("type", list.ToInterfaceSlice(types)...))
 	}
 
-	/* SQLite:
 	err := q.OrderBy("rowid ASC").All(&collections)
-	*/
-	// PostgreSQL:
-	// Sorting the columns by ctid just to provide a relatively more stable result.
-	err := q.OrderBy("ctid ASC").All(&collections)
 	if err != nil {
 		return nil, err
 	}
@@ -258,7 +253,7 @@ func (app *BaseApp) TruncateCollection(collection *Collection) error {
 // normalizeViewQueryId wraps (if necessary) the provided view query
 // with a subselect to ensure that the id column is a text since
 // currently we don't support non-string model ids
-// (see https://github.com/postgresbase/pocketbase/issues/3110).
+// (see https://ganigeorgiev.com/pocketbase/discussions/3110).
 func normalizeViewQueryId(app App, query string) (string, error) {
 	query = strings.Trim(strings.TrimSpace(query), ";")
 
@@ -329,12 +324,12 @@ func resaveViewsWithChangedFields(app App, excludeIds ...string) error {
 					f.SetId("")
 				}
 
-				encodedNewFields, err := json.Marshal(newFields)
+				encodedNewFields, err := json.Marshal(newFields, json.Deterministic(true))
 				if err != nil {
 					return err
 				}
 
-				encodedOldFields, err := json.Marshal(oldFields)
+				encodedOldFields, err := json.Marshal(oldFields, json.Deterministic(true))
 				if err != nil {
 					return err
 				}

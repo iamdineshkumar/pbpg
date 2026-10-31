@@ -12,7 +12,7 @@ import (
 
 	"github.com/google/uuid"
 	"github.com/postgresbase/dbx"
-	validation "github.com/pocketbase/ozzo-validation/v4"
+	validation "ganigeorgiev.com/pocketbase/ozzo-validation/v4"
 	"github.com/postgresbase/pocketbase/tools/security"
 	"github.com/spf13/cast"
 )

@@ -4,12 +4,13 @@ import (
 	"cmp"
 	"context"
 	"database/sql"
-	"encoding/json"
+	"encoding/json/jsontext"
+	"encoding/json/v2"
 	"errors"
 	"fmt"
 	"slices"
 
-	validation "github.com/pocketbase/ozzo-validation/v4"
+	validation "ganigeorgiev.com/pocketbase/ozzo-validation/v4"
 	"github.com/spf13/cast"
 )
 
@@ -158,18 +159,6 @@ func (app *BaseApp) ImportCollections(toImport []map[string]any, deleteMissing b
 				}
 
 				// delete collection
-				// PostgreSQL Only:
-				// Note: since postgres won't allow dropping a table/view if they are referenced
-				// by another view, we need to drop the dependent views first.
-				dependentViews, err := findDependentViews(txApp, existing.Name)
-				if err != nil {
-					return err
-				}
-				for i := len(dependentViews) - 1; i >= 0; i-- {
-					if err := txApp.DeleteView(dependentViews[i].Name); err != nil {
-						return fmt.Errorf("failed to drop view %q: %w", dependentViews[i].Name, err)
-					}
-				}
 				if err := txApp.Delete(existing); err != nil {
 					return err
 				}
@@ -198,7 +187,11 @@ func (app *BaseApp) ImportCollections(toImport []map[string]any, deleteMissing b
 			)
 			if err := validator.run(); err != nil {
 				// serialize the validation error(s)
-				serializedErr, _ := json.MarshalIndent(err, "", "  ")
+				serializedErr, _ := json.Marshal(
+					err,
+					jsontext.WithIndentPrefix(""),
+					jsontext.WithIndent("  "),
+				)
 
 				return validation.Errors{"collections": validation.NewError(
 					"validation_collections_import_failure",

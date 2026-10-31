@@ -9,9 +9,9 @@ import (
 	"github.com/postgresbase/pocketbase"
 	"github.com/postgresbase/pocketbase/apis"
 	"github.com/postgresbase/pocketbase/core"
-	"github.com/postgresbase/pocketbase/plugins/ghupdate"
 	"github.com/postgresbase/pocketbase/plugins/jsvm"
 	"github.com/postgresbase/pocketbase/plugins/migratecmd"
+	"github.com/postgresbase/pocketbase/plugins/update"
 	"github.com/postgresbase/pocketbase/tools/hook"
 	"github.com/postgresbase/pocketbase/tools/osutils"
 )
@@ -27,7 +27,7 @@ func main() {
 	app.RootCmd.PersistentFlags().StringVar(
 		&hooksDir,
 		"hooksDir",
-		os.Getenv("PB_HOOKS_DIR"),
+		"",
 		"the directory with the JS app hooks",
 	)
 
@@ -100,8 +100,12 @@ func main() {
 		Dir:          migrationsDir,
 	})
 
-	// GitHub selfupdate
-	ghupdate.MustRegister(app, app.RootCmd, ghupdate.Config{})
+	// update command
+	update.MustRegister(app, app.RootCmd, update.Config{
+		BaseURL:    "https://ganigeorgiev.com",
+		Project:    "pocketbase",
+		Repository: "pocketbase",
+	})
 
 	// static route to serves files from the provided public dir
 	// (if publicDir exists and the route path is not already defined)
@@ -123,10 +127,6 @@ func main() {
 
 // the default pb_public dir location is relative to the executable
 func defaultPublicDir() string {
-	if os.Getenv("PB_PUBLIC_DIR") != "" {
-		return os.Getenv("PB_PUBLIC_DIR")
-	}
-
 	if osutils.IsProbablyGoRun() {
 		return "./pb_public"
 	}

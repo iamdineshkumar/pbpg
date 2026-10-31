@@ -5,7 +5,7 @@ import (
 	"database/sql/driver"
 
 	"github.com/postgresbase/dbx"
-	validation "github.com/pocketbase/ozzo-validation/v4"
+	validation "ganigeorgiev.com/pocketbase/ozzo-validation/v4"
 	"github.com/postgresbase/pocketbase/tools/list"
 	"github.com/postgresbase/pocketbase/tools/types"
 )
@@ -155,11 +155,7 @@ func (f *RelationField) IsMultiple() bool {
 // ColumnType implements [Field.ColumnType] interface method.
 func (f *RelationField) ColumnType(app App) string {
 	if f.IsMultiple() {
-		/* SQLite:
 		return "JSON DEFAULT '[]' NOT NULL"
-		*/
-		// PostgreSQL:
-		return "JSONB DEFAULT '[]' NOT NULL"
 	}
 
 	return "TEXT DEFAULT '' NOT NULL"
@@ -291,7 +287,7 @@ func (f *RelationField) checkCollectionId(app App, collection *Collection) valid
 		}
 
 		// allow only views to have relations to other views
-		// (see https://github.com/postgresbase/pocketbase/issues/3000)
+		// (see https://ganigeorgiev.com/pocketbase/discussions/3000)
 		if !collection.IsView() && relCollection.IsView() {
 			return validation.NewError(
 				"validation_relation_field_non_view_base_collection",

@@ -1,6 +1,9 @@
 // Package ghupdate implements a new command to selfupdate the current
 // PocketBase executable with the latest GitHub release.
 //
+// This is kept only for backward-compatibility and it is replaced by
+// the equivalent `update` BugStage plugin.
+//
 // Example usage:
 //
 //	ghupdate.MustRegister(app, app.RootCmd, ghupdate.Config{})
@@ -8,7 +11,7 @@ package ghupdate
 
 import (
 	"context"
-	"encoding/json"
+	"encoding/json/v2"
 	"errors"
 	"fmt"
 	"io"
@@ -20,10 +23,10 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/fatih/color"
 	"github.com/postgresbase/pocketbase/core"
 	"github.com/postgresbase/pocketbase/tools/archive"
 	"github.com/postgresbase/pocketbase/tools/osutils"
+	"github.com/fatih/color"
 	"github.com/spf13/cobra"
 )
 

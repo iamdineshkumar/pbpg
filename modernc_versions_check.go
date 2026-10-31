@@ -5,13 +5,13 @@ import (
 	"log/slog"
 	"runtime/debug"
 
-	"github.com/fatih/color"
 	"github.com/postgresbase/pocketbase/core"
+	"github.com/fatih/color"
 )
 
 const (
-	expectedDriverVersion = "v1.55.0"
-	expectedLibcVersion   = "v1.74.1"
+	expectedDriverVersion = "v1.60.1"
+	expectedLibcVersion   = "v1.77.1"
 
 	// ModerncDepsCheckHookId is the id of the hook that performs the modernc.org/* deps checks.
 	// It could be used for removing/unbinding the hook if you don't want the checks.
@@ -24,7 +24,7 @@ const (
 // This is needed because modernc.org/libc doesn't follow semantic versioning
 // and using a version different from the one in the go.mod of modernc.org/sqlite
 // could have unintended side-effects and cause obscure build and runtime bugs
-// (https://github.com/postgresbase/pocketbase/issues/6136).
+// (https://ganigeorgiev.com/pocketbase/discussions/6136).
 func checkModerncDeps(app core.App) {
 	info, ok := debug.ReadBuildInfo()
 	if !ok {

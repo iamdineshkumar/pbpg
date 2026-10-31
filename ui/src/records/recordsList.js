@@ -107,7 +107,10 @@ window.app.components.recordsList = function(propsArg = {}) {
                 relExpands.push(field.name);
             }
 
-            let requestFields = fieldsWithExcerpt(props.collection.id, relationFields);
+            // disable for now since loading the entire json often tends
+            // to be faster with encoding/json/v2 because it can be directly streamed
+            // const requestFields = fieldsWithExcerpt(props.collection.id, relationFields);
+            const requestFields = undefined;
 
             // allow sorting by the top level relation presentable fields
             let normalizedSort = props.sort || undefined;
@@ -127,7 +130,7 @@ window.app.components.recordsList = function(propsArg = {}) {
                     ?.join(",");
 
                 // no explicit presentable -> try to utilize the first found implicit presentable field
-                // (https://github.com/pocketbase/pocketbase/discussions/7735)
+                // (https://ganigeorgiev.com/pocketbase/discussions/7735)
                 if (normalizedSort == "") {
                     for (let name of app.utils.fallbackPresentableProps) {
                         if (sortCollection?.fields?.find((f) => f.name == name)) {
@@ -150,6 +153,7 @@ window.app.components.recordsList = function(propsArg = {}) {
             });
 
             if (result.page == 1) {
+                props.suggestReset = false;
                 clearList();
             }
 
@@ -315,7 +319,14 @@ window.app.components.recordsList = function(propsArg = {}) {
 
             clearTimeout(deleteRefreshTimeoutId);
             deleteRefreshTimeoutId = setTimeout(() => {
-                if (!data.records?.length) {
+                if (
+                    // no more client-side records
+                    !data.records?.length
+                    // has cascade self-reference field
+                    || !!props.collection?.fields?.find((f) => {
+                        return f.type == "relation" && f.cascadeDelete && f.collectionId == props.collection.id;
+                    })
+                ) {
                     loadRecords(true);
                 }
             }, 100);
@@ -621,7 +632,7 @@ window.app.components.recordsList = function(propsArg = {}) {
                                     }),
                                     t.label({
                                         htmlFor: uniqueId + record.id,
-                                        // workaround https://github.com/pocketbase/pocketbase/issues/7771
+                                        // workaround https://ganigeorgiev.com/pocketbase/discussions/7771
                                         onclick: (e) => {
                                             e.preventDefault();
                                             const input = document.getElementById(e.target.htmlFor);

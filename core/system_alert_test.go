@@ -17,10 +17,9 @@ func TestSendSystemAlert(t *testing.T) {
 	defer os.RemoveAll(testDataDir)
 
 	testApp := NewBaseApp(BaseAppConfig{
-		DataDir:     testDataDir,
-		PostgresURL: TestPostgresURL(),
+		DataDir: testDataDir,
 	})
-	defer testApp.ResetBootstrapState()
+	defer testApp.ClearBootstrap()
 
 	if err := testApp.Bootstrap(); err != nil {
 		t.Fatal(err)
@@ -71,10 +70,9 @@ func TestSendSystemAlertToAllSuperusers(t *testing.T) {
 	defer os.RemoveAll(testDataDir)
 
 	testApp := NewBaseApp(BaseAppConfig{
-		DataDir:     testDataDir,
-		PostgresURL: TestPostgresURL(),
+		DataDir: testDataDir,
 	})
-	defer testApp.ResetBootstrapState()
+	defer testApp.ClearBootstrap()
 
 	if err := testApp.Bootstrap(); err != nil {
 		t.Fatal(err)

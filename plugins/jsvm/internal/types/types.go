@@ -13,7 +13,7 @@ import (
 	"github.com/postgresbase/pocketbase/core"
 	"github.com/postgresbase/pocketbase/plugins/jsvm"
 	"github.com/postgresbase/pocketbase/tools/list"
-	"github.com/pocketbase/tygoja"
+	"ganigeorgiev.com/pocketbase/tygoja"
 )
 
 const heading = `
@@ -129,7 +129,7 @@ type excludeHooks<Type> = {
 type CoreApp = excludeHooks<ORIGINAL_CORE_APP>
 
 // pocketbase.PocketBase without the on* hook methods
-type PocketBase = excludeHooks<ORIGINAL_POCKETBASE>
+interface PocketBase extends excludeHooks<ORIGINAL_POCKETBASE>{}
 
 /**
  * ` + "`$app`" + ` is the current running PocketBase instance that is globally
@@ -1289,7 +1289,7 @@ func main() {
 
 	gen := tygoja.New(tygoja.Config{
 		Packages: map[string][]string{
-			"github.com/pocketbase/ozzo-validation/v4":          {"Error"},
+			"ganigeorgiev.com/pocketbase/ozzo-validation/v4":          {"Error"},
 			"github.com/postgresbase/dbx":                         {"*"},
 			"github.com/postgresbase/pocketbase/tools/security":   {"*"},
 			"github.com/postgresbase/pocketbase/tools/filesystem": {"*"},
@@ -1299,9 +1299,9 @@ func main() {
 			"github.com/postgresbase/pocketbase/core":             {"*"},
 			"github.com/postgresbase/pocketbase/forms":            {"*"},
 			"github.com/postgresbase/pocketbase":                  {"*"},
-			"path/filepath":                                     {"*"},
-			"os":                                                {"*"},
-			"os/exec":                                           {"Command"},
+			"path/filepath":                                           {"*"},
+			"os":                                                      {"*"},
+			"os/exec":                                                 {"Command"},
 		},
 		FieldNameFormatter: func(s string) string {
 			return mapper.FieldName(nil, reflect.StructField{Name: s})

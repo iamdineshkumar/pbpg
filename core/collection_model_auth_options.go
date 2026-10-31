@@ -1,12 +1,15 @@
 package core
 
 import (
+	"encoding/json/v2"
+	"errors"
+	"slices"
 	"strconv"
 	"strings"
 	"time"
 
-	validation "github.com/pocketbase/ozzo-validation/v4"
-	"github.com/pocketbase/ozzo-validation/v4/is"
+	validation "ganigeorgiev.com/pocketbase/ozzo-validation/v4"
+	"ganigeorgiev.com/pocketbase/ozzo-validation/v4/is"
 	"github.com/postgresbase/pocketbase/tools/auth"
 	"github.com/postgresbase/pocketbase/tools/list"
 	"github.com/postgresbase/pocketbase/tools/security"
@@ -409,6 +412,71 @@ type OAuth2Config struct {
 	Enabled bool `form:"enabled" json:"enabled"`
 }
 
+// UnmarshalJSON implements the [json.Unmarshaler] interface.
+//
+// The main difference from the standard unmarshalization is that
+// instead of replacing the entire providers config slice, we ensure
+// that partially submitted provider data (e.g. without clientSecret)
+// is merged on per config level based on the provider name
+// (https://ganigeorgiev.com/pocketbase/discussions/7815).
+func (c *OAuth2Config) UnmarshalJSON(b []byte) error {
+	originalProviders := slices.Clone(c.Providers)
+
+	type alias OAuth2Config
+	err := json.Unmarshal(b, (*alias)(c))
+	if err != nil {
+		return err
+	}
+
+	if len(c.Providers) == 0 {
+		return nil
+	}
+
+	// unmarshal again but this time into a plain array of objects
+	// so that we have only the submitted fields and no zero defaults
+	plain := struct {
+		Providers []map[string]any `json:"providers"`
+	}{}
+	err = json.Unmarshal(b, &plain)
+	if err != nil {
+		return err
+	}
+
+	// no providers were submitted
+	if len(plain.Providers) == 0 {
+		return nil
+	}
+
+	if len(c.Providers) != len(plain.Providers) {
+		return errors.New("the length of the plain unmarshalized providers and the ones from the config doesn't match")
+	}
+
+ProvidersMergeLoop:
+	for i, plain := range plain.Providers {
+		for _, original := range originalProviders {
+			if original.Name == plain["name"] {
+				raw, err := json.Marshal(plain)
+				if err != nil {
+					return err
+				}
+
+				// unmarshal the new plain data on top of the original one
+				err = json.Unmarshal(raw, &original)
+				if err != nil {
+					return err
+				}
+
+				// reassigne to the updated original
+				c.Providers[i] = original
+
+				continue ProvidersMergeLoop
+			}
+		}
+	}
+
+	return nil
+}
+
 // GetProviderConfig returns the first OAuth2ProviderConfig that matches the specified name.
 //
 // Returns false and zero config if no such provider is available in c.Providers.
@@ -461,7 +529,7 @@ type OAuth2ProviderConfig struct {
 	//
 	// This usually shouldn't be needed but some OAuth2 vendors, like the LinkedIn OIDC,
 	// may require manual adjustment due to returning error if extra parameters are added to the request
-	// (https://github.com/postgresbase/pocketbase/discussions/3799#discussioncomment-7640312)
+	// (https://ganigeorgiev.com/pocketbase/discussions/3799#discussioncomment-7640312)
 	PKCE *bool `form:"pkce" json:"pkce"`
 
 	Name         string         `form:"name" json:"name"`

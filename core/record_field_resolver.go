@@ -1,7 +1,7 @@
 package core
 
 import (
-	"encoding/json"
+	"encoding/json/v2"
 	"errors"
 	"fmt"
 	"slices"
@@ -214,7 +214,7 @@ func (r *RecordFieldResolver) updateQueryWithDeduplicateConstraint(query *dbx.Se
 	//
 	// Disable the GROUP BY conditional checks for now since it prevents
 	// proper utilization of ORDER BY indexes (and maybe others)
-	// (https://github.com/postgresbase/pocketbase/discussions/7461)
+	// (https://ganigeorgiev.com/pocketbase/discussions/7461)
 
 	// info := query.Info()
 	// if info.Distinct {
@@ -354,7 +354,7 @@ func (r *RecordFieldResolver) resolveStaticRequestField(path ...string) (*search
 
 		// if that doesn't work, try encoding it
 		if castErr != nil {
-			encoded, jsonErr := json.Marshal(v)
+			encoded, jsonErr := json.Marshal(v, json.Deterministic(true))
 			if jsonErr == nil {
 				val = string(encoded)
 			}
@@ -374,26 +374,13 @@ func (r *RecordFieldResolver) resolveStaticRequestField(path ...string) (*search
 		return &search.ResolverResult{Identifier: "NULL"}, nil
 	}
 
-	// PostgreSQL Only:
-	// Expanded special empty string filter in advance
-	if resultVal == "" && (modifier == "" || modifier == lowerModifier) {
-		// note: LOWER('') is still ''
-		return &search.ResolverResult{Identifier: `''`}, nil
-	}
-
 	placeholder := "f" + security.PseudorandomString(10)
 
 	// @todo consider deprecating with the introduction of filter functions
 	if modifier == lowerModifier {
 		return &search.ResolverResult{
 			Identifier: "LOWER({:" + placeholder + "})",
-			/* SQLite:
 			Params:     dbx.Params{placeholder: resultVal},
-			*/
-			// PostgreSQL:
-			// `SELECT LOWER(1)` is valid in SQLite, but not in PostgreSQL
-			// so we need to explicitly cast the value to text
-			Params: dbx.Params{placeholder: cast.ToString(resultVal)},
 		}, nil
 	}
 
@@ -412,13 +399,6 @@ func (r *RecordFieldResolver) loadCollection(collectionNameOrId string) (*Collec
 }
 
 func (r *RecordFieldResolver) registerJoin(tableName string, tableAlias string, on dbx.Expression) error {
-	// PostgreSQL only:
-	if on == nil {
-		// Note: SQLite allows join without `on` clause but PostgreSQL does not.
-		// Join without `on` clause is equivalent to `ON 1=1` clause.
-		on = dbx.NewExp("1=1")
-	}
-
 	newJoin := &search.Join{
 		TableName:  tableName,
 		TableAlias: tableAlias,

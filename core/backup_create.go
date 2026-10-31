@@ -9,7 +9,9 @@ import (
 	"io"
 	"io/fs"
 	"log/slog"
+	"net/url"
 	"os"
+	"os/exec"
 	"path"
 	"path/filepath"
 	"strings"
@@ -85,6 +87,10 @@ func (app *BaseApp) CreateBackup(ctx context.Context, name string) error {
 		LocalNotifyDirName,
 		LocalAutocertCacheDirName,
 		lostFoundDirName,
+		// test infrastructure files (pg-dump files used for test DB setup, Makefile)
+		"data.pg-dump.sql",
+		"auxiliary.pg-dump.sql",
+		"Makefile",
 	}
 
 	return app.OnBackupCreate().Trigger(event, func(e *BackupEvent) error {
@@ -207,9 +213,15 @@ func createZip(be *BackupEvent, tempZipPath string) error {
 	dataStartTime := time.Now()
 	tempDataDBPath := filepath.Join(localTempDir, dataDBFilename)
 
-	_, err = be.App.ConcurrentDB().NewQuery("VACUUM INTO {:path}").Bind(dbx.Params{"path": tempDataDBPath}).Execute()
-	if err != nil {
-		return err
+	if be.App.PostgresURL() != "" {
+		if err := pgDump(be.App.PostgresURL(), be.App.PostgresDataDB(), tempDataDBPath); err != nil {
+			return fmt.Errorf("failed to pg_dump data database: %w", err)
+		}
+	} else {
+		_, err = be.App.ConcurrentDB().NewQuery("VACUUM INTO {:path}").Bind(dbx.Params{"path": tempDataDBPath}).Execute()
+		if err != nil {
+			return err
+		}
 	}
 
 	// eagerly stop listening for deleted files since we already have what we needed
@@ -253,9 +265,15 @@ func createZip(be *BackupEvent, tempZipPath string) error {
 	auxStartTime := time.Now()
 	tempAuxDBPath := filepath.Join(localTempDir, auxDBFilename)
 
-	_, err = be.App.AuxConcurrentDB().NewQuery("VACUUM INTO {:path}").Bind(dbx.Params{"path": tempAuxDBPath}).Execute()
-	if err != nil {
-		return err
+	if be.App.PostgresURL() != "" {
+		if err := pgDump(be.App.PostgresURL(), be.App.PostgresAuxDB(), tempAuxDBPath); err != nil {
+			return fmt.Errorf("failed to pg_dump auxiliary database: %w", err)
+		}
+	} else {
+		_, err = be.App.AuxConcurrentDB().NewQuery("VACUUM INTO {:path}").Bind(dbx.Params{"path": tempAuxDBPath}).Execute()
+		if err != nil {
+			return err
+		}
 	}
 
 	be.App.Logger().Debug(
@@ -278,8 +296,10 @@ func createZip(be *BackupEvent, tempZipPath string) error {
 	// previous VACUUM INTO are transferred and don't accumulate
 	// (errors are ignore because some drivers may not support the wal_checkpoint pragma)
 	// ---------------------------------------------------------------
-	_, _ = be.App.NonconcurrentDB().NewQuery("PRAGMA wal_checkpoint(TRUNCATE)").Execute()
-	_, _ = be.App.AuxNonconcurrentDB().NewQuery("PRAGMA wal_checkpoint(TRUNCATE)").Execute()
+	if be.App.PostgresURL() == "" {
+		_, _ = be.App.NonconcurrentDB().NewQuery("PRAGMA wal_checkpoint(TRUNCATE)").Execute()
+		_, _ = be.App.AuxNonconcurrentDB().NewQuery("PRAGMA wal_checkpoint(TRUNCATE)").Execute()
+	}
 
 	// copy the rest of the pb_data
 	// ---------------------------------------------------------------
@@ -434,4 +454,35 @@ func (z *zipWriter) copyDirToZip(fsys fs.FS, excludedPrefixes *store.Store[strin
 
 		return err
 	})
+}
+
+// pgDump runs the pg_dump command-line tool to dump the specified PostgreSQL
+// database to a file. This is the PostgreSQL equivalent of SQLite's
+// VACUUM INTO used for backups.
+func pgDump(postgresURL, dbName, outputPath string) error {
+	u, err := url.Parse(postgresURL)
+	if err != nil {
+		return fmt.Errorf("invalid postgres URL: %w", err)
+	}
+
+	host := u.Hostname()
+	port := u.Port()
+	if port == "" {
+		port = "5432"
+	}
+	user := u.User.Username()
+	password, _ := u.User.Password()
+
+	cmd := exec.Command("pg_dump",
+		"-h", host,
+		"-p", port,
+		"-U", user,
+		"-d", dbName,
+		"-f", outputPath,
+	)
+	if password != "" {
+		cmd.Env = append(os.Environ(), "PGPASSWORD="+password)
+	}
+
+	return cmd.Run()
 }

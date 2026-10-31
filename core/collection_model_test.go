@@ -894,10 +894,9 @@ func TestCollectionIndexHelpers(t *testing.T) {
 	c.AddIndex("idx2", true, "colA", "")
 	c.AddIndex("idx3", false, "colA", "")
 	c.AddIndex("idx3", false, "colB", "") // should overwrite the previous one
-
-	idx1 := "CREATE INDEX `idx1` ON `test` (colA,colB) WHERE colA != 1"
-	idx2 := "CREATE UNIQUE INDEX `idx2` ON `test` (colA)"
-	idx3 := "CREATE INDEX `idx3` ON `test` (colB)"
+	idx1 := "CREATE INDEX \"idx1\" ON \"test\" (colA,colB) WHERE colA != 1"
+	idx2 := "CREATE UNIQUE INDEX \"idx2\" ON \"test\" (colA)"
+	idx3 := "CREATE INDEX \"idx3\" ON \"test\" (colB)"
 
 	checkIndexes(t, c.Indexes, []string{idx1, idx2, idx3})
 
@@ -1665,7 +1664,13 @@ func TestCollectionSaveViewWrapping(t *testing.T) {
 
 			var sql string
 
+			/* SQLite:
 			rowErr := app.ConcurrentDB().NewQuery("SELECT sql FROM sqlite_master WHERE type='view' AND name={:name}").
+				Bind(dbx.Params{"name": viewName}).
+				Row(&sql)
+			*/
+			// PostgreSQL:
+			rowErr := app.ConcurrentDB().NewQuery("SELECT view_definition FROM information_schema.views WHERE table_schema = current_schema() AND table_name = {:name}").
 				Bind(dbx.Params{"name": viewName}).
 				Row(&sql)
 			if rowErr != nil {

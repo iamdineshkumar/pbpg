@@ -13,7 +13,7 @@ const oldAuthAlertTemplate = `<p>Hello,</p>
   {APP_NAME} team
 </p>`
 
-func init() {
+func init_disabled5() {
 	core.SystemMigrations.Register(func(txApp core.App) error {
 		collections, err := txApp.FindAllCollections(core.CollectionTypeAuth)
 		if err != nil {
@@ -29,7 +29,7 @@ func init() {
 
 			c.AuthAlert.EmailTemplate.Body = newTemplate
 
-			err = txApp.Save(c)
+			err = txApp.SaveNoValidate(c)
 			if err != nil {
 				return err
 			}
@@ -51,7 +51,7 @@ func init() {
 
 			c.AuthAlert.EmailTemplate.Body = oldAuthAlertTemplate
 
-			err = txApp.Save(c)
+			err = txApp.SaveNoValidate(c)
 			if err != nil {
 				return err
 			}

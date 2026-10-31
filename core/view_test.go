@@ -6,7 +6,6 @@ import (
 	"slices"
 	"testing"
 
-	"github.com/postgresbase/dbx"
 	"github.com/postgresbase/pocketbase/core"
 	"github.com/postgresbase/pocketbase/tests"
 )
@@ -14,12 +13,20 @@ import (
 func ensureNoTempViews(app core.App, t *testing.T) {
 	var total int
 
+	/* SQLite:
 	err := app.DB().Select("count(*)").
 		From("sqlite_schema").
 		AndWhere(dbx.HashExp{"type": "view"}).
 		AndWhere(dbx.NewExp(`[[name]] LIKE '%\_temp\_%' ESCAPE '\'`)).
 		Limit(1).
 		Row(&total)
+	*/
+	// PostgreSQL:
+	err := app.DB().NewQuery(`
+		SELECT count(*) FROM information_schema.views
+		WHERE table_schema = current_schema()
+		AND table_name LIKE '%\_temp\_%' ESCAPE '\'
+	`).Row(&total)
 	if err != nil {
 		t.Fatalf("Failed to check for temp views: %v", err)
 	}
@@ -130,7 +137,7 @@ func TestSaveView(t *testing.T) {
 		{
 			"simple select query (+ trimmed semicolon)",
 			"123Test",
-			";select *, count(id) as c  from " + core.CollectionNameSuperusers + ";",
+			";select *, 1 as c  from " + core.CollectionNameSuperusers + ";",
 			false,
 			[]string{
 				"id", "created", "updated",
@@ -284,20 +291,20 @@ func TestCreateViewFields(t *testing.T) {
 					"id",
 					"created",
 					"updated",
-					[text],
-					` + "`bool`" + `,
+					"text",
+					"bool",
 					"url",
 					"select_one",
 					"select_many",
 					"file_one",
 					"demo1"."file_many",
-					` + "`demo1`." + "`number`" + ` number_alias,
+					"demo1"."number" number_alias,
 					"email",
 					"datetime",
 					"json",
 					"rel_one",
 					"rel_many",
-					'single_quoted_custom_literal' as 'single_quoted_column'
+					'single_quoted_custom_literal' as "single_quoted_column"
 				from demo1
 			`,
 			false,
@@ -323,7 +330,7 @@ func TestCreateViewFields(t *testing.T) {
 		},
 		{
 			"query with indirect relations fields",
-			"select a.id, b.id as bid, b.created from demo1 as a left join demo2 b",
+			"select a.id, b.id as bid, b.created from demo1 as a left join demo2 b on true",
 			false,
 			map[string]string{
 				"id":      core.FieldTypeText,
@@ -343,11 +350,11 @@ func TestCreateViewFields(t *testing.T) {
 					` + core.CollectionNameSuperusers + `.id as eid,
 					` + core.CollectionNameSuperusers + `.email
 				from demo1 a, demo2 as b
-				left join demo3 lj on lj.id = 123
-				inner join demo4 as ij on ij.id = 123
-				join ` + core.CollectionNameSuperusers + `
+				left join demo3 lj on lj.id = '123'
+				inner join demo4 as ij on ij.id = '123'
+				join ` + core.CollectionNameSuperusers + ` on true
 				where 1=1
-				group by a.id
+				group by a.id, a.bool, b.id, lj.id, ij.id, ` + core.CollectionNameSuperusers + `.id, ` + core.CollectionNameSuperusers + `.email
 				limit 10
 			`,
 			false,
@@ -374,12 +381,13 @@ func TestCreateViewFields(t *testing.T) {
 				cast(a.id as text) cast_text,
 				cast(a.id as bool) cast_bool,
 				cast(a.id as boolean) cast_boolean,
-				avg(a.id) avg,
-				sum(a.id) sum,
-				total(a.id) total,
+				avg(cast(a.id as numeric)) avg,
+				sum(cast(a.id as numeric)) sum,
+				count(a.id) total,
 				min(a.id) min,
 				max(a.id) max
-			from demo1 a`,
+			from demo1 a
+			group by a.id`,
 			false,
 			map[string]string{
 				"id":           core.FieldTypeText,
@@ -413,7 +421,8 @@ func TestCreateViewFields(t *testing.T) {
 						end
 					) as int
 				) as cast_int
-			from demo1 a`,
+			from demo1 a
+			group by id`,
 			false,
 			map[string]string{
 				"id":       core.FieldTypeText,
@@ -439,11 +448,11 @@ func TestCreateViewFields(t *testing.T) {
 					a.id,
 					a.username,
 					a.email,
-					a.emailVisibility,
+					a."emailVisibility",
 					a.verified,
 					demo1.id relid
 				from users a
-				left join demo1
+				left join demo1 on true
 			`,
 			false,
 			map[string]string{
@@ -504,7 +513,7 @@ func TestCreateViewFields(t *testing.T) {
 				b.text as alias3,
 				b.text as alias4
 			from demo1 a
-			left join demo1 as b`,
+			left join demo1 as b on true`,
 			false,
 			map[string]string{
 				"id":     core.FieldTypeText,
@@ -560,13 +569,14 @@ func TestCreateViewFieldsWithNumberOnlyInt(t *testing.T) {
 	sql := `select
 		a.id,
 		count(a.id) count,
-		total(a.id) total,
+		count(a.id) total,
 		cast(a.id as int) cast_int,
 		cast(a.id as integer) cast_integer,
 		cast(a.id as real) cast_real,
 		cast(a.id as decimal) cast_decimal,
 		cast(a.id as numeric) cast_numeric
-	from demo1 a`
+	from demo1 a
+	group by a.id`
 
 	result, err := app.CreateViewFields(sql)
 	if err != nil {
@@ -575,7 +585,7 @@ func TestCreateViewFieldsWithNumberOnlyInt(t *testing.T) {
 
 	onlyInts := map[string]bool{
 		"count":        true,
-		"total":        false,
+		"total":        true,
 		"cast_int":     true,
 		"cast_integer": true,
 		"cast_real":    false,
@@ -779,7 +789,7 @@ func TestDryRunView(t *testing.T) {
 		},
 		{
 			"select with invalid formatted field name",
-			"select 'a' as id, count(*)", // missing field alias
+			"select 'a' as id, count(*) as \"count(*)\"", // invalid field alias
 			10,
 			true,
 			nil,

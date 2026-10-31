@@ -229,6 +229,15 @@ type App interface {
 	// in the auxiliary.db.
 	AuxHasTable(tableName string) bool
 
+	// PostgresURL returns the configured PostgreSQL connection URL (empty when in SQLite mode).
+	PostgresURL() string
+
+	// PostgresDataDB returns the configured PostgreSQL data database name.
+	PostgresDataDB() string
+
+	// PostgresAuxDB returns the configured PostgreSQL auxiliary database name.
+	PostgresAuxDB() string
+
 	// TableColumns returns all column names of a single table by its name.
 	TableColumns(tableName string) ([]string, error)
 

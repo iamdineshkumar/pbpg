@@ -7,8 +7,8 @@ import (
 	"net/url"
 	"regexp"
 
-	"github.com/postgresbase/dbx"
 	_ "github.com/jackc/pgx/v5/stdlib"
+	"github.com/postgresbase/dbx"
 	_ "modernc.org/sqlite"
 )
 
@@ -28,6 +28,13 @@ func DefaultDBConnect(dbPath string) (*dbx.DB, error) {
 
 // Sample Connection String: "postgres://<username>:<password>@127.0.0.1:<port>"
 func PostgresDBConnectFunc(connectionString string) DBConnectFunc {
+	// defer validation to call time so NewBaseApp doesn't panic during construction
+	if connectionString == "" {
+		return func(dbName string) (*dbx.DB, error) {
+			return nil, fmt.Errorf("PostgresURL is not set")
+		}
+	}
+
 	url, err := url.Parse(connectionString)
 	if err != nil {
 		panic(fmt.Errorf("invalid connection string: %s", err))

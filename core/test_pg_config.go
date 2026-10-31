@@ -4,6 +4,9 @@ import (
 	"fmt"
 	"net/url"
 	"os"
+	"os/exec"
+
+	"github.com/postgresbase/pocketbase/tools/security"
 )
 
 // EnvTestPostgresURL is the environment variable name used to configure
@@ -83,4 +86,35 @@ func (c TestPostgresCreds) DropdbCommand(dbName string) string {
 // PsqlCommand returns a shell command string to run a psql file import.
 func (c TestPostgresCreds) PsqlCommand(dbName, file string) string {
 	return fmt.Sprintf("%spsql -h %s -p %s -U %s -d %s < %s", c.PgEnvCommand(), c.Host, c.Port, c.User, dbName, file)
+}
+
+// TestPostgresBaseAppConfig returns a BaseAppConfig preconfigured for PostgreSQL
+// tests with unique data/aux database names. The databases are created if needed.
+// Callers should defer the returned cleanup func to drop the test databases.
+func TestPostgresBaseAppConfig(dataDir string) (BaseAppConfig, func()) {
+	randomStr := security.RandomString(4)
+	testDataDB := "pb_test_" + randomStr + "_data_db"
+	testAuxDB := "pb_test_" + randomStr + "_aux_db"
+
+	creds := TestPostgresCredentials()
+
+	// create the test databases
+	exec.Command("sh", "-c", creds.DropdbCommand(testDataDB)).Run()
+	exec.Command("sh", "-c", creds.DropdbCommand(testAuxDB)).Run()
+	exec.Command("sh", "-c", creds.CreatedbCommand(testDataDB)).Run()
+	exec.Command("sh", "-c", creds.CreatedbCommand(testAuxDB)).Run()
+
+	config := BaseAppConfig{
+		DataDir:        dataDir,
+		PostgresURL:    TestPostgresURL(),
+		PostgresDataDB: testDataDB,
+		PostgresAuxDB:  testAuxDB,
+	}
+
+	cleanup := func() {
+		exec.Command("sh", "-c", creds.DropdbCommand(testDataDB)).Run()
+		exec.Command("sh", "-c", creds.DropdbCommand(testAuxDB)).Run()
+	}
+
+	return config, cleanup
 }

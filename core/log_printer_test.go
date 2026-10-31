@@ -9,10 +9,10 @@ import (
 	"testing"
 	"time"
 
+	"github.com/fatih/color"
 	"github.com/postgresbase/dbx"
 	"github.com/postgresbase/pocketbase/tools/list"
 	"github.com/postgresbase/pocketbase/tools/logger"
-	"github.com/fatih/color"
 )
 
 func TestBaseAppLoggerLevelDevPrint(t *testing.T) {
@@ -52,8 +52,9 @@ func TestBaseAppLoggerLevelDevPrint(t *testing.T) {
 			defer os.RemoveAll(testDataDir)
 
 			app := NewBaseApp(BaseAppConfig{
-				DataDir: testDataDir,
-				IsDev:   s.isDev,
+				DataDir:     testDataDir,
+				PostgresURL: TestPostgresURL(),
+				IsDev:       s.isDev,
 			})
 			defer app.ClearBootstrap()
 

@@ -38,7 +38,12 @@ func (app *BaseApp) FindAllCollections(collectionTypes ...string) ([]*Collection
 		q.AndWhere(dbx.In("type", list.ToInterfaceSlice(types)...))
 	}
 
+	/* SQLite:
 	err := q.OrderBy("rowid ASC").All(&collections)
+	*/
+	// PostgreSQL:
+	// Sorting the columns by ctid just to provide a relatively more stable result.
+	err := q.OrderBy("ctid ASC").All(&collections)
 	if err != nil {
 		return nil, err
 	}

@@ -10,7 +10,7 @@ import (
 )
 
 // see https://github.com/postgresbase/pocketbase/issues/7689
-func init() {
+func init_disabled6() {
 	core.SystemMigrations.Register(func(txApp core.App) error {
 		collections, err := txApp.FindAllCollections()
 		if err != nil {
@@ -122,7 +122,7 @@ func init() {
 			}
 
 			// resave to trigger indexes normalization
-			err = txApp.Save(collection)
+			err = txApp.SaveNoValidate(collection)
 			if err != nil {
 				return err
 			}

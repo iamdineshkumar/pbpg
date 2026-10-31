@@ -118,11 +118,17 @@ func TestSyncRecordTableSchema(t *testing.T) {
 func getTotalViews(app core.App) (int, error) {
 	var total int
 
+	/* SQLite:
 	err := app.DB().Select("count(*)").
 		From("sqlite_master").
 		AndWhere(dbx.NewExp("sql is not null")).
 		AndWhere(dbx.HashExp{"type": "view"}).
 		Row(&total)
+	*/
+	// PostgreSQL:
+	err := app.DB().NewQuery(`
+		SELECT count(*) FROM information_schema.views WHERE table_schema = current_schema()
+	`).Row(&total)
 
 	return total, err
 }
@@ -179,6 +185,7 @@ func TestSingleVsMultipleValuesNormalization(t *testing.T) {
 		t.Fatal(err)
 	}
 
+	/* SQLite:
 	tableInfoExpectations := map[string]string{
 		"select_one":   `'[]'`,
 		"select_many":  `''`,
@@ -187,6 +194,17 @@ func TestSingleVsMultipleValuesNormalization(t *testing.T) {
 		"rel_one":      `'[]'`,
 		"rel_many":     `''`,
 		"new_multiple": `'[]'`,
+	}
+	*/
+	// PostgreSQL:
+	tableInfoExpectations := map[string]string{
+		"select_one":   `'[]'::json`,
+		"select_many":  `''::text`,
+		"file_one":     `'[]'::json`,
+		"file_many":    `''::text`,
+		"rel_one":      `'[]'::json`,
+		"rel_many":     `''::text`,
+		"new_multiple": `'[]'::json`,
 	}
 	for col, dflt := range tableInfoExpectations {
 		t.Run("check default for "+col, func(t *testing.T) {
@@ -301,8 +319,8 @@ func TestDropIndexWithoutTableName(t *testing.T) {
 	app, _ := tests.NewTestApp()
 	defer app.Cleanup()
 
-	properIndex := "CREATE INDEX `new_test_idx2` ON `new_test` (`test`)"
-	indexWithoutTableName := "CREATE INDEX `new_test_idx2` ON `` (`test`)"
+	properIndex := "CREATE INDEX \"new_test_idx2\" ON \"new_test\" (\"test\")"
+	indexWithoutTableName := "CREATE INDEX \"new_test_idx2\" ON \"\" (\"test\")"
 
 	dummyCollection := core.NewBaseCollection("new_test")
 	dummyCollection.Fields.Add(&core.TextField{Name: "test"})

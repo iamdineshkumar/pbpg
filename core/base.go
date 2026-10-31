@@ -17,6 +17,7 @@ import (
 
 	"os/exec"
 
+	"github.com/fatih/color"
 	"github.com/postgresbase/dbx"
 	"github.com/postgresbase/pocketbase/tools/cron"
 	"github.com/postgresbase/pocketbase/tools/filesystem"
@@ -28,7 +29,6 @@ import (
 	"github.com/postgresbase/pocketbase/tools/store"
 	"github.com/postgresbase/pocketbase/tools/subscriptions"
 	"github.com/postgresbase/pocketbase/tools/types"
-	"github.com/fatih/color"
 	"github.com/spf13/cast"
 	"golang.org/x/sync/semaphore"
 )
@@ -241,6 +241,12 @@ func NewBaseApp(config BaseAppConfig) *BaseApp {
 	// apply config defaults
 	if app.config.DBConnect == nil {
 		app.config.DBConnect = PostgresDBConnectFunc(app.config.PostgresURL)
+	}
+	// auto-generate unique test database names if not set (for tests that call NewBaseApp directly)
+	if app.config.PostgresURL != "" && app.config.PostgresDataDB == "" && app.config.PostgresAuxDB == "" {
+		randomStr := security.RandomString(4)
+		app.config.PostgresDataDB = "pb_test_" + randomStr + "_data_db"
+		app.config.PostgresAuxDB = "pb_test_" + randomStr + "_aux_db"
 	}
 	if app.config.DataMaxOpenConns <= 0 {
 		app.config.DataMaxOpenConns = DefaultDataMaxOpenConns
@@ -679,6 +685,11 @@ func (app *BaseApp) IsDev() bool {
 // enable it. We will use Postgres's LISTEN/NOTIFY feature to sync realtime events.
 func (app *BaseApp) IsRealtimeBridgeEnabled() bool {
 	return app.config.IsRealtimeBridge
+}
+
+// PostgresURL returns the configured PostgreSQL connection URL (empty when in SQLite mode).
+func (app *BaseApp) PostgresURL() string {
+	return app.config.PostgresURL
 }
 
 // PostgresDataDB returns the name of the main data db (default `data`) used by the app.

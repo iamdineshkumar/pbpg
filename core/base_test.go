@@ -63,7 +63,8 @@ func TestBaseAppBootstrap(t *testing.T) {
 	defer os.RemoveAll(testDataDir)
 
 	app := core.NewBaseApp(core.BaseAppConfig{
-		DataDir: testDataDir,
+		DataDir:     testDataDir,
+		PostgresURL: core.TestPostgresURL(),
 	})
 	defer app.ClearBootstrap()
 
@@ -139,7 +140,8 @@ func TestNewBaseAppTx(t *testing.T) {
 	defer os.RemoveAll(testDataDir)
 
 	app := core.NewBaseApp(core.BaseAppConfig{
-		DataDir: testDataDir,
+		DataDir:     testDataDir,
+		PostgresURL: core.TestPostgresURL(),
 	})
 	defer app.ClearBootstrap()
 
@@ -213,7 +215,8 @@ func TestBaseAppNewFilesystem(t *testing.T) {
 	defer os.RemoveAll(testDataDir)
 
 	app := core.NewBaseApp(core.BaseAppConfig{
-		DataDir: testDataDir,
+		DataDir:     testDataDir,
+		PostgresURL: core.TestPostgresURL(),
 	})
 	defer app.ClearBootstrap()
 
@@ -242,7 +245,8 @@ func TestBaseAppNewBackupsFilesystem(t *testing.T) {
 	defer os.RemoveAll(testDataDir)
 
 	app := core.NewBaseApp(core.BaseAppConfig{
-		DataDir: testDataDir,
+		DataDir:     testDataDir,
+		PostgresURL: core.TestPostgresURL(),
 	})
 	defer app.ClearBootstrap()
 
@@ -471,8 +475,9 @@ func TestBaseAppRefreshSettingsLoggerMinLevelEnabled(t *testing.T) {
 			defer os.RemoveAll(testDataDir)
 
 			app := core.NewBaseApp(core.BaseAppConfig{
-				DataDir: testDataDir,
-				IsDev:   s.isDev,
+				DataDir:     testDataDir,
+				PostgresURL: core.TestPostgresURL(),
+				IsDev:       s.isDev,
 			})
 			defer app.ClearBootstrap()
 

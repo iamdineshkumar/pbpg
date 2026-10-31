@@ -25,14 +25,16 @@ func TestNotifyWatcher_SettingsUpdate(t *testing.T) {
 	defer os.RemoveAll(tmpDir)
 
 	app1 := core.NewBaseApp(core.BaseAppConfig{
-		DataDir: tmpDir,
+		DataDir:     tmpDir,
+		PostgresURL: core.TestPostgresURL(),
 	})
 	if err := app1.Bootstrap(); err != nil {
 		t.Fatal(err)
 	}
 
 	app2 := core.NewBaseApp(core.BaseAppConfig{
-		DataDir: tmpDir,
+		DataDir:     tmpDir,
+		PostgresURL: core.TestPostgresURL(),
 	})
 	if err := app2.Bootstrap(); err != nil {
 		t.Fatal(err)
@@ -97,14 +99,16 @@ func TestNotifyWatcher_CollectionsUpdate(t *testing.T) {
 	defer os.RemoveAll(tmpDir)
 
 	app1 := core.NewBaseApp(core.BaseAppConfig{
-		DataDir: tmpDir,
+		DataDir:     tmpDir,
+		PostgresURL: core.TestPostgresURL(),
 	})
 	if err := app1.Bootstrap(); err != nil {
 		t.Fatal(err)
 	}
 
 	app2 := core.NewBaseApp(core.BaseAppConfig{
-		DataDir: tmpDir,
+		DataDir:     tmpDir,
+		PostgresURL: core.TestPostgresURL(),
 	})
 	if err := app2.Bootstrap(); err != nil {
 		t.Fatal(err)
@@ -183,7 +187,7 @@ func TestNotifyWatcher_CollectionsUpdate(t *testing.T) {
 		t.Fatalf("Expected 1 concurrent query, got %d (%v)", len(concurrentQueries), concurrentQueries)
 	}
 
-	expectedQuery := "SELECT {{_collections}}.* FROM `_collections` ORDER BY `rowid` ASC"
+	expectedQuery := "SELECT {{_collections}}.* FROM \"_collections\" ORDER BY ctid ASC"
 	if concurrentQueries[0] != expectedQuery {
 		t.Fatalf("Expected query\n%s\ngot\n%s", expectedQuery, concurrentQueries[0])
 	}

@@ -36,28 +36,6 @@ func init() {
 			return fmt.Errorf("_params exec error: %w", err)
 		}
 
-		// -----------------------------------------------------------
-		/* SQLite:
-		_, execerr := txApp.DB().NewQuery(`
-			CREATE TABLE {{_collections}} (
-				[[id]]         TEXT PRIMARY KEY DEFAULT ('r'||lower(hex(randomblob(7)))) NOT NULL,
-				[[system]]     BOOLEAN DEFAULT FALSE NOT NULL,
-				[[type]]       TEXT DEFAULT "base" NOT NULL,
-				[[name]]       TEXT UNIQUE NOT NULL,
-				[[fields]]     JSON DEFAULT "[]" NOT NULL,
-				[[indexes]]    JSON DEFAULT "[]" NOT NULL,
-				[[listRule]]   TEXT DEFAULT NULL,
-				[[viewRule]]   TEXT DEFAULT NULL,
-				[[createRule]] TEXT DEFAULT NULL,
-				[[updateRule]] TEXT DEFAULT NULL,
-				[[deleteRule]] TEXT DEFAULT NULL,
-				[[options]]    JSON DEFAULT "{}" NOT NULL,
-				[[created]]    TEXT DEFAULT (strftime('%Y-%m-%d %H:%M:%fZ')) NOT NULL,
-				[[updated]]    TEXT DEFAULT (strftime('%Y-%m-%d %H:%M:%fZ')) NOT NULL
-			);
-			CREATE INDEX IF NOT EXISTS idx__collections_type on {{_collections}} ([[type]]);
-		`).Execute()
-		*/
 		// PostgreSQL:
 		_, execerr := txApp.DB().NewQuery(`
 			CREATE TABLE {{_collections}} (
@@ -188,7 +166,7 @@ func createMFAsCollection(txApp core.App) error {
 	})
 	col.AddIndex("idx_mfas_collectionRef_recordRef", false, "collectionRef,recordRef", "")
 
-	return txApp.Save(col)
+	return txApp.SaveNoValidate(col)
 }
 
 func createOTPsCollection(txApp core.App) error {
@@ -234,7 +212,7 @@ func createOTPsCollection(txApp core.App) error {
 	})
 	col.AddIndex("idx_otps_collectionRef_recordRef", false, "collectionRef, recordRef", "")
 
-	return txApp.Save(col)
+	return txApp.SaveNoValidate(col)
 }
 
 func createAuthOriginsCollection(txApp core.App) error {
@@ -274,7 +252,7 @@ func createAuthOriginsCollection(txApp core.App) error {
 	})
 	col.AddIndex("idx_authOrigins_unique_pairs", true, "collectionRef, recordRef, fingerprint", "")
 
-	return txApp.Save(col)
+	return txApp.SaveNoValidate(col)
 }
 
 func createExternalAuthsCollection(txApp core.App) error {
@@ -320,7 +298,7 @@ func createExternalAuthsCollection(txApp core.App) error {
 	col.AddIndex("idx_externalAuths_record_provider", true, "collectionRef, recordRef, provider", "")
 	col.AddIndex("idx_externalAuths_collection_provider", true, "collectionRef, provider, providerId", "")
 
-	return txApp.Save(col)
+	return txApp.SaveNoValidate(col)
 }
 
 func createSuperusersCollection(txApp core.App) error {
@@ -344,7 +322,7 @@ func createSuperusersCollection(txApp core.App) error {
 	})
 	superusers.AuthToken.Duration = 86400 // 1 day
 
-	return txApp.Save(superusers)
+	return txApp.SaveNoValidate(superusers)
 }
 
 func createUsersCollection(txApp core.App) error {
@@ -378,5 +356,5 @@ func createUsersCollection(txApp core.App) error {
 	users.OAuth2.MappedFields.Name = "name"
 	users.OAuth2.MappedFields.AvatarURL = "avatar"
 
-	return txApp.Save(users)
+	return txApp.SaveNoValidate(users)
 }

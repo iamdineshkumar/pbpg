@@ -7,8 +7,8 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/postgresbase/dbx"
 	validation "ganigeorgiev.com/pocketbase/ozzo-validation/v4"
+	"github.com/postgresbase/dbx"
 	"github.com/postgresbase/pocketbase/core/validators"
 	"github.com/postgresbase/pocketbase/tools/dbutils"
 	"github.com/postgresbase/pocketbase/tools/list"
@@ -562,12 +562,22 @@ func (cv *collectionValidator) checkIndexes(value any) error {
 
 		// ensure that the index name is not used in another collection
 		var usedTblName string
+		/* SQLite:
 		_ = cv.app.ConcurrentDB().Select("tbl_name").
 			From("sqlite_master").
 			AndWhere(dbx.HashExp{"type": "index"}).
 			AndWhere(dbx.NewExp("LOWER([[tbl_name]])!=LOWER({:oldName})", dbx.Params{"oldName": cv.original.Name})).
 			AndWhere(dbx.NewExp("LOWER([[tbl_name]])!=LOWER({:newName})", dbx.Params{"newName": cv.new.Name})).
 			AndWhere(dbx.NewExp("LOWER([[name]])=LOWER({:indexName})", dbx.Params{"indexName": parsed.IndexName})).
+			Limit(1).
+			Row(&usedTblName)
+		*/
+		// PostgreSQL:
+		_ = cv.app.ConcurrentDB().Select("tablename").
+			From("pg_indexes").
+			AndWhere(dbx.NewExp("LOWER([[tablename]])!=LOWER({:oldName})", dbx.Params{"oldName": cv.original.Name})).
+			AndWhere(dbx.NewExp("LOWER([[tablename]])!=LOWER({:newName})", dbx.Params{"newName": cv.new.Name})).
+			AndWhere(dbx.NewExp("LOWER([[indexname]])=LOWER({:indexName})", dbx.Params{"indexName": parsed.IndexName})).
 			Limit(1).
 			Row(&usedTblName)
 		if usedTblName != "" {

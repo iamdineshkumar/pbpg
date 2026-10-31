@@ -274,8 +274,11 @@ func TestProviderExecEmptyQuery(t *testing.T) {
 }
 
 func TestProviderExecNonEmptyQuery(t *testing.T) {
-	testDB, cleanup := createTestDB()
-	defer cleanup()
+	testDB, err := createTestDB()
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer testDB.Close()
 
 	query := testDB.Select("*").
 		From("test").
@@ -473,8 +476,11 @@ func TestProviderExecNonEmptyQuery(t *testing.T) {
 }
 
 func TestProviderFilterAndSortLimits(t *testing.T) {
-	testDB, cleanup := createTestDB()
-	defer cleanup()
+	testDB, err := createTestDB()
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer testDB.Close()
 
 	query := testDB.Select("*").
 		From("test").
@@ -605,8 +611,11 @@ func TestProviderFilterAndSortLimits(t *testing.T) {
 }
 
 func TestProviderParseAndExec(t *testing.T) {
-	testDB, cleanup := createTestDB()
-	defer cleanup()
+	testDB, err := createTestDB()
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer testDB.Close()
 
 	query := testDB.Select("*").
 		From("test").
@@ -739,11 +748,21 @@ type testDB struct {
 	*dbx.DB
 	mu            sync.Mutex
 	CalledQueries []string
+	cleanup       func()
 }
 
-// NB! Don't forget to call `defer cleanup()` at the end of the test.
-func createTestDB() (*testDB, func()) {
+func (db *testDB) Close() error {
+	if db.cleanup != nil {
+		db.cleanup()
+		db.cleanup = nil
+	}
+	return nil
+}
+
+// NB! Don't forget to call `defer testDB.Close()` at the end of the test.
+func createTestDB() (*testDB, error) {
 	db, cleanup := NewTestDBX()
+	db.cleanup = cleanup
 
 	db.CreateTable("test", map[string]string{
 		"id":                                    "int default 0",
@@ -761,7 +780,7 @@ func createTestDB() (*testDB, func()) {
 		db.CalledQueries = append(db.CalledQueries, sql)
 	}
 
-	return db, cleanup
+	return db, nil
 }
 
 func NewTestDBX() (db *testDB, cleanup func()) {

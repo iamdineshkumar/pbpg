@@ -10,12 +10,12 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/pocketbase/dbx"
-	"github.com/pocketbase/pocketbase/core"
-	"github.com/pocketbase/pocketbase/tests"
-	"github.com/pocketbase/pocketbase/tools/dbutils"
-	"github.com/pocketbase/pocketbase/tools/hook"
-	"github.com/pocketbase/pocketbase/tools/types"
+	"github.com/postgresbase/dbx"
+	"github.com/postgresbase/pocketbase/core"
+	"github.com/postgresbase/pocketbase/tests"
+	"github.com/postgresbase/pocketbase/tools/dbutils"
+	"github.com/postgresbase/pocketbase/tools/hook"
+	"github.com/postgresbase/pocketbase/tools/types"
 )
 
 func TestNewCollection(t *testing.T) {

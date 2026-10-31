@@ -5,8 +5,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/pocketbase/pocketbase/core"
-	"github.com/pocketbase/pocketbase/tests"
+	"github.com/postgresbase/pocketbase/core"
+	"github.com/postgresbase/pocketbase/tests"
 	"github.com/spf13/cast"
 )
 

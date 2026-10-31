@@ -7,8 +7,8 @@ import (
 	"testing"
 
 	"github.com/ganigeorgiev/fexpr"
-	"github.com/pocketbase/dbx"
-	"github.com/pocketbase/pocketbase/tools/security"
+	"github.com/postgresbase/dbx"
+	"github.com/postgresbase/pocketbase/tools/security"
 )
 
 func TestTokenFunctionsGeoDistance(t *testing.T) {

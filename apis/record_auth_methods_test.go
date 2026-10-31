@@ -4,8 +4,8 @@ import (
 	"net/http"
 	"testing"
 
-	"github.com/pocketbase/pocketbase/core"
-	"github.com/pocketbase/pocketbase/tests"
+	"github.com/postgresbase/pocketbase/core"
+	"github.com/postgresbase/pocketbase/tests"
 )
 
 func TestRecordAuthMethodsList(t *testing.T) {

@@ -4,8 +4,8 @@ import (
 	"errors"
 	"time"
 
-	"github.com/pocketbase/dbx"
-	"github.com/pocketbase/pocketbase/tools/types"
+	"github.com/postgresbase/dbx"
+	"github.com/postgresbase/pocketbase/tools/types"
 )
 
 // FindAllOTPsByRecord returns all OTP models linked to the provided auth record.

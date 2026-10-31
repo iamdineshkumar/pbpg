@@ -17,17 +17,17 @@ import (
 	"os/exec"
 
 	"github.com/fatih/color"
-	"github.com/pocketbase/dbx"
-	"github.com/pocketbase/pocketbase/tools/cron"
-	"github.com/pocketbase/pocketbase/tools/filesystem"
-	"github.com/pocketbase/pocketbase/tools/hook"
-	"github.com/pocketbase/pocketbase/tools/logger"
-	"github.com/pocketbase/pocketbase/tools/mailer"
-	"github.com/pocketbase/pocketbase/tools/routine"
-	"github.com/pocketbase/pocketbase/tools/security"
-	"github.com/pocketbase/pocketbase/tools/store"
-	"github.com/pocketbase/pocketbase/tools/subscriptions"
-	"github.com/pocketbase/pocketbase/tools/types"
+	"github.com/postgresbase/dbx"
+	"github.com/postgresbase/pocketbase/tools/cron"
+	"github.com/postgresbase/pocketbase/tools/filesystem"
+	"github.com/postgresbase/pocketbase/tools/hook"
+	"github.com/postgresbase/pocketbase/tools/logger"
+	"github.com/postgresbase/pocketbase/tools/mailer"
+	"github.com/postgresbase/pocketbase/tools/routine"
+	"github.com/postgresbase/pocketbase/tools/security"
+	"github.com/postgresbase/pocketbase/tools/store"
+	"github.com/postgresbase/pocketbase/tools/subscriptions"
+	"github.com/postgresbase/pocketbase/tools/types"
 	"github.com/spf13/cast"
 	"golang.org/x/sync/semaphore"
 )
@@ -1326,7 +1326,7 @@ func normalizeSQLLog(sql string) string {
 
 func (app *BaseApp) initAuxDB() error {
 	// note: renamed to "auxiliary" because "aux" is a reserved Windows filename
-	// (see https://github.com/pocketbase/pocketbase/issues/5607)
+	// (see https://github.com/postgresbase/pocketbase/issues/5607)
 	/* SQLite:
 	dbPath := filepath.Join(app.DataDir(), "auxiliary.db")
 	*/
@@ -1413,7 +1413,7 @@ func (app *BaseApp) registerBaseHooks() {
 		Func: func(e *ModelEvent) error {
 			if m, ok := e.Model.(FilesManager); ok && m.BaseFilesPath() != "" && supportFiles(e.Model) {
 				// ensure that there is a trailing slash so that the list iterator could start walking from the prefix dir
-				// (https://github.com/pocketbase/pocketbase/discussions/5246#discussioncomment-10128955)
+				// (https://github.com/postgresbase/pocketbase/discussions/5246#discussioncomment-10128955)
 				prefix := strings.TrimRight(m.BaseFilesPath(), "/") + "/"
 
 				// note: for now assume no context cancellation

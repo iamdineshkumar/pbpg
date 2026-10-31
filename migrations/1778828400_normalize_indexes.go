@@ -4,12 +4,12 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/pocketbase/dbx"
-	"github.com/pocketbase/pocketbase/core"
-	"github.com/pocketbase/pocketbase/tools/dbutils"
+	"github.com/postgresbase/dbx"
+	"github.com/postgresbase/pocketbase/core"
+	"github.com/postgresbase/pocketbase/tools/dbutils"
 )
 
-// see https://github.com/pocketbase/pocketbase/issues/7689
+// see https://github.com/postgresbase/pocketbase/issues/7689
 func init() {
 	core.SystemMigrations.Register(func(txApp core.App) error {
 		collections, err := txApp.FindAllCollections()

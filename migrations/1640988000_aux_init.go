@@ -3,7 +3,7 @@ package migrations
 import (
 	"fmt"
 
-	"github.com/pocketbase/pocketbase/core"
+	"github.com/postgresbase/pocketbase/core"
 )
 
 func init() {

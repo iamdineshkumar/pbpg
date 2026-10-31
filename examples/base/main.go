@@ -6,14 +6,14 @@ import (
 	"os"
 	"path/filepath"
 
-	"github.com/pocketbase/pocketbase"
-	"github.com/pocketbase/pocketbase/apis"
-	"github.com/pocketbase/pocketbase/core"
-	"github.com/pocketbase/pocketbase/plugins/ghupdate"
-	"github.com/pocketbase/pocketbase/plugins/jsvm"
-	"github.com/pocketbase/pocketbase/plugins/migratecmd"
-	"github.com/pocketbase/pocketbase/tools/hook"
-	"github.com/pocketbase/pocketbase/tools/osutils"
+	"github.com/postgresbase/pocketbase"
+	"github.com/postgresbase/pocketbase/apis"
+	"github.com/postgresbase/pocketbase/core"
+	"github.com/postgresbase/pocketbase/plugins/ghupdate"
+	"github.com/postgresbase/pocketbase/plugins/jsvm"
+	"github.com/postgresbase/pocketbase/plugins/migratecmd"
+	"github.com/postgresbase/pocketbase/tools/hook"
+	"github.com/postgresbase/pocketbase/tools/osutils"
 )
 
 func main() {

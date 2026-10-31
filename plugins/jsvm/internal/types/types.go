@@ -10,9 +10,9 @@ import (
 	"strings"
 	"time"
 
-	"github.com/pocketbase/pocketbase/core"
-	"github.com/pocketbase/pocketbase/plugins/jsvm"
-	"github.com/pocketbase/pocketbase/tools/list"
+	"github.com/postgresbase/pocketbase/core"
+	"github.com/postgresbase/pocketbase/plugins/jsvm"
+	"github.com/postgresbase/pocketbase/tools/list"
 	"github.com/pocketbase/tygoja"
 )
 
@@ -1290,15 +1290,15 @@ func main() {
 	gen := tygoja.New(tygoja.Config{
 		Packages: map[string][]string{
 			"github.com/pocketbase/ozzo-validation/v4":          {"Error"},
-			"github.com/pocketbase/dbx":                         {"*"},
-			"github.com/pocketbase/pocketbase/tools/security":   {"*"},
-			"github.com/pocketbase/pocketbase/tools/filesystem": {"*"},
-			"github.com/pocketbase/pocketbase/tools/template":   {"*"},
-			"github.com/pocketbase/pocketbase/mails":            {"*"},
-			"github.com/pocketbase/pocketbase/apis":             {"*"},
-			"github.com/pocketbase/pocketbase/core":             {"*"},
-			"github.com/pocketbase/pocketbase/forms":            {"*"},
-			"github.com/pocketbase/pocketbase":                  {"*"},
+			"github.com/postgresbase/dbx":                         {"*"},
+			"github.com/postgresbase/pocketbase/tools/security":   {"*"},
+			"github.com/postgresbase/pocketbase/tools/filesystem": {"*"},
+			"github.com/postgresbase/pocketbase/tools/template":   {"*"},
+			"github.com/postgresbase/pocketbase/mails":            {"*"},
+			"github.com/postgresbase/pocketbase/apis":             {"*"},
+			"github.com/postgresbase/pocketbase/core":             {"*"},
+			"github.com/postgresbase/pocketbase/forms":            {"*"},
+			"github.com/postgresbase/pocketbase":                  {"*"},
 			"path/filepath":                                     {"*"},
 			"os":                                                {"*"},
 			"os/exec":                                           {"Command"},

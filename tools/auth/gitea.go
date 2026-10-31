@@ -8,7 +8,7 @@ import (
 	"io"
 	"strconv"
 
-	"github.com/pocketbase/pocketbase/tools/types"
+	"github.com/postgresbase/pocketbase/tools/types"
 	"golang.org/x/oauth2"
 )
 

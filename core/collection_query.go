@@ -9,8 +9,8 @@ import (
 	"slices"
 	"strings"
 
-	"github.com/pocketbase/dbx"
-	"github.com/pocketbase/pocketbase/tools/list"
+	"github.com/postgresbase/dbx"
+	"github.com/postgresbase/pocketbase/tools/list"
 )
 
 const StoreKeyCachedCollections = "pbAppCachedCollections"
@@ -258,7 +258,7 @@ func (app *BaseApp) TruncateCollection(collection *Collection) error {
 // normalizeViewQueryId wraps (if necessary) the provided view query
 // with a subselect to ensure that the id column is a text since
 // currently we don't support non-string model ids
-// (see https://github.com/pocketbase/pocketbase/issues/3110).
+// (see https://github.com/postgresbase/pocketbase/issues/3110).
 func normalizeViewQueryId(app App, query string) (string, error) {
 	query = strings.Trim(strings.TrimSpace(query), ";")
 

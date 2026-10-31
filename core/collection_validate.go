@@ -7,13 +7,13 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/pocketbase/dbx"
+	"github.com/postgresbase/dbx"
 	validation "github.com/pocketbase/ozzo-validation/v4"
-	"github.com/pocketbase/pocketbase/core/validators"
-	"github.com/pocketbase/pocketbase/tools/dbutils"
-	"github.com/pocketbase/pocketbase/tools/list"
-	"github.com/pocketbase/pocketbase/tools/search"
-	"github.com/pocketbase/pocketbase/tools/types"
+	"github.com/postgresbase/pocketbase/core/validators"
+	"github.com/postgresbase/pocketbase/tools/dbutils"
+	"github.com/postgresbase/pocketbase/tools/list"
+	"github.com/postgresbase/pocketbase/tools/search"
+	"github.com/postgresbase/pocketbase/tools/types"
 )
 
 var collectionNameRegex = regexp.MustCompile(`^\w+$`)

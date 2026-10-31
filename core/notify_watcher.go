@@ -9,9 +9,9 @@ import (
 
 	"github.com/fatih/color"
 	"github.com/fsnotify/fsnotify"
-	"github.com/pocketbase/pocketbase/tools/hook"
-	"github.com/pocketbase/pocketbase/tools/routine"
-	"github.com/pocketbase/pocketbase/tools/security"
+	"github.com/postgresbase/pocketbase/tools/hook"
+	"github.com/postgresbase/pocketbase/tools/routine"
+	"github.com/postgresbase/pocketbase/tools/security"
 )
 
 const systemHookIdNotifyWatcher = "__pbNotifyWatcherSystemHook__"

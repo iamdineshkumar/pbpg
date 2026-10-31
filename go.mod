@@ -1,4 +1,4 @@
-module github.com/pocketbase/pocketbase
+module github.com/postgresbase/pocketbase
 
 go 1.25.0
 
@@ -14,9 +14,9 @@ require (
 	github.com/golang-jwt/jwt/v5 v5.3.1
 	github.com/google/uuid v1.6.0
 	github.com/jackc/pgx/v5 v5.10.0
-	github.com/pocketbase/dbx v1.11.0
 	github.com/pocketbase/ozzo-validation/v4 v4.3.0
 	github.com/pocketbase/tygoja v0.1.0
+	github.com/postgresbase/dbx v1.13.0-pg
 	github.com/spf13/cast v1.10.0
 	github.com/spf13/cobra v1.10.2
 	golang.org/x/crypto v0.55.0
@@ -51,5 +51,3 @@ require (
 	modernc.org/mathutil v1.7.1 // indirect
 	modernc.org/memory v1.11.0 // indirect
 )
-
-replace github.com/pocketbase/dbx v1.11.0 => github.com/fondoger/dbx v0.0.0-20250428115856-688aa3631781

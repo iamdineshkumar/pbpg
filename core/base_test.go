@@ -11,11 +11,11 @@ import (
 
 	_ "unsafe"
 
-	"github.com/pocketbase/dbx"
-	"github.com/pocketbase/pocketbase/core"
-	"github.com/pocketbase/pocketbase/tests"
-	"github.com/pocketbase/pocketbase/tools/logger"
-	"github.com/pocketbase/pocketbase/tools/mailer"
+	"github.com/postgresbase/dbx"
+	"github.com/postgresbase/pocketbase/core"
+	"github.com/postgresbase/pocketbase/tests"
+	"github.com/postgresbase/pocketbase/tools/logger"
+	"github.com/postgresbase/pocketbase/tools/mailer"
 )
 
 func TestNewBaseApp(t *testing.T) {
@@ -563,7 +563,7 @@ func TestBaseAppTriggerOnTerminate(t *testing.T) {
 	event.App = app
 
 	// trigger OnTerminate multiple times to ensure that it doesn't deadlock
-	// https://github.com/pocketbase/pocketbase/pull/7305
+	// https://github.com/postgresbase/pocketbase/pull/7305
 	app.OnTerminate().Trigger(event)
 	app.OnTerminate().Trigger(event)
 	app.OnTerminate().Trigger(event)

@@ -9,9 +9,9 @@ import (
 	"strings"
 
 	"github.com/ganigeorgiev/fexpr"
-	"github.com/pocketbase/dbx"
-	"github.com/pocketbase/pocketbase/tools/security"
-	"github.com/pocketbase/pocketbase/tools/store"
+	"github.com/postgresbase/dbx"
+	"github.com/postgresbase/pocketbase/tools/security"
+	"github.com/postgresbase/pocketbase/tools/store"
 	"github.com/spf13/cast"
 )
 

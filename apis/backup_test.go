@@ -10,10 +10,10 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/pocketbase/pocketbase/apis"
-	"github.com/pocketbase/pocketbase/core"
-	"github.com/pocketbase/pocketbase/tests"
-	"github.com/pocketbase/pocketbase/tools/filesystem/blob"
+	"github.com/postgresbase/pocketbase/apis"
+	"github.com/postgresbase/pocketbase/core"
+	"github.com/postgresbase/pocketbase/tests"
+	"github.com/postgresbase/pocketbase/tools/filesystem/blob"
 )
 
 func TestBackupsList(t *testing.T) {

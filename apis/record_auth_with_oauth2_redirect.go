@@ -7,9 +7,9 @@ import (
 	"strings"
 	"time"
 
-	"github.com/pocketbase/pocketbase/core"
-	"github.com/pocketbase/pocketbase/tools/subscriptions"
-	"github.com/pocketbase/pocketbase/ui"
+	"github.com/postgresbase/pocketbase/core"
+	"github.com/postgresbase/pocketbase/tools/subscriptions"
+	"github.com/postgresbase/pocketbase/ui"
 )
 
 const (
@@ -66,7 +66,7 @@ func oauth2SubscriptionRedirect(e *core.RequestEvent) error {
 	}
 
 	// temporary store the Apple user's name so that it can be later retrieved with the authWithOAuth2 call
-	// (see https://github.com/pocketbase/pocketbase/issues/7090)
+	// (see https://github.com/postgresbase/pocketbase/issues/7090)
 	if data.AppleUser != "" && data.Error == "" && data.Code != "" {
 		nameErr := parseAndStoreAppleRedirectName(
 			e.App,

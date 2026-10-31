@@ -12,11 +12,11 @@ import (
 	"sort"
 	"time"
 
-	"github.com/pocketbase/pocketbase/tools/archive"
-	"github.com/pocketbase/pocketbase/tools/filesystem"
-	"github.com/pocketbase/pocketbase/tools/inflector"
-	"github.com/pocketbase/pocketbase/tools/osutils"
-	"github.com/pocketbase/pocketbase/tools/security"
+	"github.com/postgresbase/pocketbase/tools/archive"
+	"github.com/postgresbase/pocketbase/tools/filesystem"
+	"github.com/postgresbase/pocketbase/tools/inflector"
+	"github.com/postgresbase/pocketbase/tools/osutils"
+	"github.com/postgresbase/pocketbase/tools/security"
 )
 
 const (
@@ -151,7 +151,7 @@ func (app *BaseApp) CreateBackup(ctx context.Context, name string) error {
 //
 // Note that if your pb_data has custom network mounts as subdirectories, then
 // it is possible the restore to fail during the `os.Rename` operations
-// (see https://github.com/pocketbase/pocketbase/issues/4647).
+// (see https://github.com/postgresbase/pocketbase/issues/4647).
 func (app *BaseApp) RestoreBackup(ctx context.Context, name string) error {
 	if app.Store().Has(StoreKeyActiveBackup) {
 		return errors.New("try again later - another backup/restore operation has already been started")

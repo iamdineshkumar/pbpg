@@ -1,6 +1,6 @@
 package tests
 
-import "github.com/pocketbase/pocketbase/core"
+import "github.com/postgresbase/pocketbase/core"
 
 // Re-export the PostgreSQL test config helpers from core so that
 // test files importing the tests package can use them directly.

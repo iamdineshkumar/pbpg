@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/pocketbase/dbx"
+	"github.com/postgresbase/dbx"
 )
 
 // TODO: replace json with `jsonb` everywhere in the codebase

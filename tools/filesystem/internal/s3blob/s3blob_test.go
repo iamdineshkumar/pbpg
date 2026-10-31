@@ -10,10 +10,10 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/pocketbase/pocketbase/tools/filesystem/blob"
-	"github.com/pocketbase/pocketbase/tools/filesystem/internal/s3blob"
-	"github.com/pocketbase/pocketbase/tools/filesystem/internal/s3blob/s3"
-	"github.com/pocketbase/pocketbase/tools/filesystem/internal/s3blob/s3/tests"
+	"github.com/postgresbase/pocketbase/tools/filesystem/blob"
+	"github.com/postgresbase/pocketbase/tools/filesystem/internal/s3blob"
+	"github.com/postgresbase/pocketbase/tools/filesystem/internal/s3blob/s3"
+	"github.com/postgresbase/pocketbase/tools/filesystem/internal/s3blob/s3/tests"
 )
 
 func TestNew(t *testing.T) {

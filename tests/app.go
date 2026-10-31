@@ -12,11 +12,11 @@ import (
 	"runtime"
 	"sync"
 
-	"github.com/pocketbase/pocketbase/core"
-	"github.com/pocketbase/pocketbase/tools/hook"
-	"github.com/pocketbase/pocketbase/tools/security"
+	"github.com/postgresbase/pocketbase/core"
+	"github.com/postgresbase/pocketbase/tools/hook"
+	"github.com/postgresbase/pocketbase/tools/security"
 
-	_ "github.com/pocketbase/pocketbase/migrations"
+	_ "github.com/postgresbase/pocketbase/migrations"
 )
 
 // TestApp is a wrapper app instance used for testing.
@@ -169,7 +169,7 @@ func NewTestAppWithConfig(config core.BaseAppConfig) (*TestApp, error) {
 	t.OnServe().Bind(&hook.Handler[*core.ServeEvent]{
 		Func: func(e *core.ServeEvent) error {
 			t.registerEventCall("OnServe")
-			e.InstallerFunc = nil // https://github.com/pocketbase/pocketbase/discussions/7202
+			e.InstallerFunc = nil // https://github.com/postgresbase/pocketbase/discussions/7202
 			return e.Next()
 		},
 		Priority: -99999,

@@ -5,10 +5,10 @@ import (
 	"errors"
 	"slices"
 
-	"github.com/pocketbase/dbx"
+	"github.com/postgresbase/dbx"
 	validation "github.com/pocketbase/ozzo-validation/v4"
-	"github.com/pocketbase/pocketbase/tools/hook"
-	"github.com/pocketbase/pocketbase/tools/types"
+	"github.com/postgresbase/pocketbase/tools/hook"
+	"github.com/postgresbase/pocketbase/tools/types"
 )
 
 const CollectionNameAuthOrigins = "_authOrigins"

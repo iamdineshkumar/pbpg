@@ -7,12 +7,12 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/pocketbase/pocketbase/tools/auth"
-	"github.com/pocketbase/pocketbase/tools/hook"
-	"github.com/pocketbase/pocketbase/tools/mailer"
-	"github.com/pocketbase/pocketbase/tools/router"
-	"github.com/pocketbase/pocketbase/tools/search"
-	"github.com/pocketbase/pocketbase/tools/subscriptions"
+	"github.com/postgresbase/pocketbase/tools/auth"
+	"github.com/postgresbase/pocketbase/tools/hook"
+	"github.com/postgresbase/pocketbase/tools/mailer"
+	"github.com/postgresbase/pocketbase/tools/router"
+	"github.com/postgresbase/pocketbase/tools/search"
+	"github.com/postgresbase/pocketbase/tools/subscriptions"
 	"golang.org/x/crypto/acme/autocert"
 )
 

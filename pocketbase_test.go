@@ -5,7 +5,7 @@ import (
 	"path/filepath"
 	"testing"
 
-	"github.com/pocketbase/pocketbase/core"
+	"github.com/postgresbase/pocketbase/core"
 	"github.com/spf13/cobra"
 )
 

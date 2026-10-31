@@ -4,9 +4,9 @@ import (
 	"net/http"
 
 	validation "github.com/pocketbase/ozzo-validation/v4"
-	"github.com/pocketbase/pocketbase/core"
-	"github.com/pocketbase/pocketbase/core/validators"
-	"github.com/pocketbase/pocketbase/tools/filesystem"
+	"github.com/postgresbase/pocketbase/core"
+	"github.com/postgresbase/pocketbase/core/validators"
+	"github.com/postgresbase/pocketbase/tools/filesystem"
 )
 
 func backupUpload(e *core.RequestEvent) error {

@@ -16,9 +16,9 @@ import (
 	"time"
 
 	_ "github.com/jackc/pgx/v5/stdlib"
-	"github.com/pocketbase/dbx"
-	"github.com/pocketbase/pocketbase/tools/list"
-	"github.com/pocketbase/pocketbase/tools/security"
+	"github.com/postgresbase/dbx"
+	"github.com/postgresbase/pocketbase/tools/list"
+	"github.com/postgresbase/pocketbase/tools/security"
 )
 
 func TestNewProvider(t *testing.T) {

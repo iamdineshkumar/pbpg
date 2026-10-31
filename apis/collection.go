@@ -7,11 +7,11 @@ import (
 	"strings"
 
 	validation "github.com/pocketbase/ozzo-validation/v4"
-	"github.com/pocketbase/pocketbase/core"
-	"github.com/pocketbase/pocketbase/tools/auth"
-	"github.com/pocketbase/pocketbase/tools/router"
-	"github.com/pocketbase/pocketbase/tools/search"
-	"github.com/pocketbase/pocketbase/tools/security"
+	"github.com/postgresbase/pocketbase/core"
+	"github.com/postgresbase/pocketbase/tools/auth"
+	"github.com/postgresbase/pocketbase/tools/router"
+	"github.com/postgresbase/pocketbase/tools/search"
+	"github.com/postgresbase/pocketbase/tools/security"
 )
 
 // bindCollectionApi registers the collection api endpoints and the corresponding handlers.

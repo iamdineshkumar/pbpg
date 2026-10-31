@@ -1,6 +1,6 @@
 package migrations
 
-import "github.com/pocketbase/dbx"
+import "github.com/postgresbase/dbx"
 
 func createSQLiteEquivalentFunctions(db dbx.Builder) error {
 	//PostgreSQL:

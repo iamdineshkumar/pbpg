@@ -10,15 +10,15 @@ import (
 	"strings"
 	"time"
 
-	"github.com/pocketbase/dbx"
+	"github.com/postgresbase/dbx"
 	validation "github.com/pocketbase/ozzo-validation/v4"
-	"github.com/pocketbase/pocketbase/core"
-	"github.com/pocketbase/pocketbase/tools/hook"
-	"github.com/pocketbase/pocketbase/tools/picker"
-	"github.com/pocketbase/pocketbase/tools/router"
-	"github.com/pocketbase/pocketbase/tools/routine"
-	"github.com/pocketbase/pocketbase/tools/search"
-	"github.com/pocketbase/pocketbase/tools/subscriptions"
+	"github.com/postgresbase/pocketbase/core"
+	"github.com/postgresbase/pocketbase/tools/hook"
+	"github.com/postgresbase/pocketbase/tools/picker"
+	"github.com/postgresbase/pocketbase/tools/router"
+	"github.com/postgresbase/pocketbase/tools/routine"
+	"github.com/postgresbase/pocketbase/tools/search"
+	"github.com/postgresbase/pocketbase/tools/subscriptions"
 	"golang.org/x/sync/errgroup"
 )
 
@@ -64,7 +64,7 @@ func realtimeConnect(e *core.RequestEvent) error {
 
 	e.Response.Header().Set("Content-Type", "text/event-stream")
 	e.Response.Header().Set("Cache-Control", "no-store")
-	// https://github.com/pocketbase/pocketbase/discussions/480#discussioncomment-3657640
+	// https://github.com/postgresbase/pocketbase/discussions/480#discussioncomment-3657640
 	// https://nginx.org/en/docs/http/ngx_http_proxy_module.html#proxy_buffering
 	e.Response.Header().Set("X-Accel-Buffering", "no")
 
@@ -686,7 +686,7 @@ func realtimeBroadcastRecord(app core.App, action string, record *core.Record, d
 						// can be reused here too to avoid eventual future
 						// discrepencies in the record event data
 						//
-						// https://github.com/pocketbase/pocketbase/issues/7721
+						// https://github.com/postgresbase/pocketbase/issues/7721
 						// -------------------------------------------
 
 						// enable hidden fields for superuser subscribers

@@ -5,10 +5,10 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/pocketbase/dbx"
+	"github.com/postgresbase/dbx"
 	validation "github.com/pocketbase/ozzo-validation/v4"
-	"github.com/pocketbase/pocketbase/tools/dbutils"
-	"github.com/pocketbase/pocketbase/tools/security"
+	"github.com/postgresbase/pocketbase/tools/dbutils"
+	"github.com/postgresbase/pocketbase/tools/security"
 )
 
 // SyncRecordTableSchema compares the two provided collections
@@ -346,7 +346,7 @@ func dropCollectionIndexes(app App, collection *Collection) error {
 			parsed := dbutils.ParseIndex(raw)
 
 			// note: don't check IsValid because the index table name may not be populated
-			// (https://github.com/pocketbase/pocketbase/issues/7689)
+			// (https://github.com/postgresbase/pocketbase/issues/7689)
 			if parsed.IndexName == "" {
 				return fmt.Errorf("failed to dop index - missing index name: %s", raw)
 			}

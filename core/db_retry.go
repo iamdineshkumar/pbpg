@@ -8,7 +8,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/pocketbase/dbx"
+	"github.com/postgresbase/dbx"
 )
 
 // default retries intervals (in ms)

@@ -3,7 +3,7 @@ package core
 import (
 	"errors"
 
-	"github.com/pocketbase/dbx"
+	"github.com/postgresbase/dbx"
 )
 
 // FindAllExternalAuthsByRecord returns all ExternalAuth models

@@ -7,7 +7,7 @@ import (
 	"strings"
 
 	"github.com/ganigeorgiev/fexpr"
-	"github.com/pocketbase/dbx"
+	"github.com/postgresbase/dbx"
 )
 
 var TokenFunctions = map[string]func(

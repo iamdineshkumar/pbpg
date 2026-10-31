@@ -9,10 +9,10 @@ import (
 	"time"
 
 	"github.com/fatih/color"
-	"github.com/pocketbase/dbx"
-	"github.com/pocketbase/pocketbase/core"
-	"github.com/pocketbase/pocketbase/tools/osutils"
-	"github.com/pocketbase/pocketbase/ui"
+	"github.com/postgresbase/dbx"
+	"github.com/postgresbase/pocketbase/core"
+	"github.com/postgresbase/pocketbase/tools/osutils"
+	"github.com/postgresbase/pocketbase/ui"
 )
 
 // DefaultInstallerFunc is the default PocketBase installer function.
@@ -21,7 +21,7 @@ import (
 // token for the systemSuperuser) to the installer UI so that users can
 // create their own custom superuser record.
 //
-// See https://github.com/pocketbase/pocketbase/discussions/5814.
+// See https://github.com/postgresbase/pocketbase/discussions/5814.
 func DefaultInstallerFunc(app core.App, systemSuperuser *core.Record, baseURL string) error {
 	if ui.DistDirFS == nil {
 		color.Magenta("You can create your first superuser by running: %s superuser upsert EMAIL PASS", executablePath())

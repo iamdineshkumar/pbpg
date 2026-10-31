@@ -4,8 +4,8 @@ import (
 	"encoding/json"
 	"testing"
 
-	"github.com/pocketbase/pocketbase/tools/picker"
-	"github.com/pocketbase/pocketbase/tools/search"
+	"github.com/postgresbase/pocketbase/tools/picker"
+	"github.com/postgresbase/pocketbase/tools/search"
 )
 
 func TestPickFields(t *testing.T) {

@@ -10,12 +10,12 @@ import (
 	"slices"
 	"strings"
 
-	"github.com/pocketbase/dbx"
-	"github.com/pocketbase/pocketbase/tools/dbutils"
-	"github.com/pocketbase/pocketbase/tools/inflector"
-	"github.com/pocketbase/pocketbase/tools/security"
-	"github.com/pocketbase/pocketbase/tools/sort"
-	"github.com/pocketbase/pocketbase/tools/tokenizer"
+	"github.com/postgresbase/dbx"
+	"github.com/postgresbase/pocketbase/tools/dbutils"
+	"github.com/postgresbase/pocketbase/tools/inflector"
+	"github.com/postgresbase/pocketbase/tools/security"
+	"github.com/postgresbase/pocketbase/tools/sort"
+	"github.com/postgresbase/pocketbase/tools/tokenizer"
 )
 
 // DeleteView drops the specified view name.

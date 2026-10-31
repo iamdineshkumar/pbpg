@@ -6,8 +6,8 @@ import (
 	"os"
 	"strings"
 
-	"github.com/pocketbase/pocketbase/apis"
-	"github.com/pocketbase/pocketbase/core"
+	"github.com/postgresbase/pocketbase/apis"
+	"github.com/postgresbase/pocketbase/core"
 	"github.com/spf13/cobra"
 )
 

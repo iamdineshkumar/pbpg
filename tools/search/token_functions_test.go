@@ -117,7 +117,7 @@ func TestTokenFunctionsGeoDistance(t *testing.T) {
 			baseTokenResolver,
 			&ResolverResult{
 				NullFallback: NullFallbackDisabled,
-				Identifier:   `(6371 * acos(min(1, max(-1, cos(radians({:latA})) * cos(radians({:latB})) * cos(radians({:lonB}) - radians({:lonA})) + sin(radians({:latA})) * sin(radians({:latB}))))))`,
+				Identifier:   `(6371 * acos(least(1, greatest(-1, cos(radians({:latA})) * cos(radians({:latB})) * cos(radians({:lonB}) - radians({:lonA})) + sin(radians({:latA})) * sin(radians({:latB}))))))`,
 				Params: map[string]any{
 					"lonA": 1,
 					"latA": 2,
@@ -138,7 +138,7 @@ func TestTokenFunctionsGeoDistance(t *testing.T) {
 			baseTokenResolver,
 			&ResolverResult{
 				NullFallback: NullFallbackDisabled,
-				Identifier:   `(6371 * acos(min(1, max(-1, cos(radians({:latA})) * cos(radians({:latB})) * cos(radians({:lonB}) - radians({:lonA})) + sin(radians({:latA})) * sin(radians({:latB}))))))`,
+				Identifier:   `(6371 * acos(least(1, greatest(-1, cos(radians({:latA})) * cos(radians({:latB})) * cos(radians({:lonB}) - radians({:lonA})) + sin(radians({:latA})) * sin(radians({:latB}))))))`,
 				Params: map[string]any{
 					"lonA": "null",
 					"latA": 2,

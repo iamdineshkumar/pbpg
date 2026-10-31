@@ -52,7 +52,8 @@ var TokenFunctions = map[string]func(
 			// the clamping is to prevent floating point rounding errors for values like
 			// "1.0002" that could occur for example when comparing identical points
 			// (see the NULL note for arccosine in https://sqlite.org/lang_mathfunc.html#overview)
-			Identifier: `(6371 * acos(min(1, max(-1, ` +
+			// PostgreSQL: use LEAST/GREATEST instead of the SQLite scalar min/max
+			Identifier: `(6371 * acos(least(1, greatest(-1, ` +
 				`cos(radians(` + latA + `)) * cos(radians(` + latB + `)) * ` +
 				`cos(radians(` + lonB + `) - radians(` + lonA + `)) + ` +
 				`sin(radians(` + latA + `)) * sin(radians(` + latB + `))` +

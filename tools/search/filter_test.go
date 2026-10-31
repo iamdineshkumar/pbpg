@@ -5,14 +5,52 @@ import (
 	"database/sql"
 	"errors"
 	"fmt"
+	"net/url"
+	"os"
+	"os/exec"
 	"regexp"
 	"strings"
 	"testing"
 	"time"
 
+	_ "github.com/jackc/pgx/v5/stdlib"
 	"github.com/postgresbase/dbx"
 	"github.com/postgresbase/pocketbase/tools/search"
+	"github.com/postgresbase/pocketbase/tools/security"
 )
+
+// NewTestDBX creates a new test PostgreSQL database and returns a
+// dbx.DB connected to it together with a cleanup function that drops it.
+func NewTestDBX() (*dbx.DB, func()) {
+	dbName := "pb_test_" + security.RandomString(5)
+
+	pgURL := os.Getenv("TEST_POSTGRES_URL")
+	if pgURL == "" {
+		pgURL = "postgres://postgres:postgres@127.0.0.1:5432/pb-pg-test?sslmode=disable"
+	}
+	u, _ := url.Parse(pgURL)
+	pgPass, _ := u.User.Password()
+	pgUser := u.User.Username()
+	pgHost := u.Hostname()
+	pgPort := u.Port()
+	if pgPort == "" {
+		pgPort = "5432"
+	}
+
+	exec.Command("sh", "-c", fmt.Sprintf("PGPASSWORD=%s createdb -h %s -p %s -U %s %s", pgPass, pgHost, pgPort, pgUser, dbName)).Run()
+
+	sqlDB, err := sql.Open("pgx", fmt.Sprintf("postgres://%s:%s@%s:%s/%s?sslmode=disable", pgUser, pgPass, pgHost, pgPort, dbName))
+	if err != nil {
+		panic(err)
+	}
+
+	cleanup := func() {
+		sqlDB.Close()
+		exec.Command("sh", "-c", fmt.Sprintf("PGPASSWORD=%s dropdb --if-exists -h %s -p %s -U %s %s", pgPass, pgHost, pgPort, pgUser, dbName)).Run()
+	}
+
+	return dbx.NewFromDB(sqlDB, "pgx"), cleanup
+}
 
 func TestFilterDataBuildExpr(t *testing.T) {
 	resolver := search.NewSimpleFieldResolver("test1", "test2", "test3", `^test4_\w+$`, `^test5\.[\w\.\:]*\w+$`)
@@ -51,55 +89,55 @@ func TestFilterDataBuildExpr(t *testing.T) {
 			"simple expression",
 			"test1 > 1",
 			false,
-			"[[test1]] > {:TEST}",
+			"[[test1]] > 1",
 		},
 		{
 			"empty string vs null",
 			"'' = null && null != ''",
 			false,
-			"('' = '' AND '' IS NOT '')",
+			"('' = '' AND '' IS DISTINCT FROM '')",
 		},
 		{
 			"like with 2 columns",
 			"test1 ~ test2",
 			false,
-			"[[test1]] LIKE ('%' || [[test2]] || '%') ESCAPE '\\'",
+			"[[test1]]::text LIKE ('%' || [[test2]]::text || '%') ESCAPE '\\'",
 		},
 		{
 			"like with right column operand",
 			"'lorem' ~ test1",
 			false,
-			"{:TEST} LIKE ('%' || [[test1]] || '%') ESCAPE '\\'",
+			"{:TEST} LIKE ('%' || [[test1]]::text || '%') ESCAPE '\\'",
 		},
 		{
 			"like with left column operand and text as right operand",
 			"test1 ~ 'lorem'",
 			false,
-			"[[test1]] LIKE {:TEST} ESCAPE '\\'",
+			"[[test1]]::text LIKE {:TEST} ESCAPE '\\'",
 		},
 		{
 			"not like with 2 columns",
 			"test1 !~ test2",
 			false,
-			"[[test1]] NOT LIKE ('%' || [[test2]] || '%') ESCAPE '\\'",
+			"[[test1]]::text NOT LIKE ('%' || [[test2]]::text || '%') ESCAPE '\\'",
 		},
 		{
 			"not like with right column operand",
 			"'lorem' !~ test1",
 			false,
-			"{:TEST} NOT LIKE ('%' || [[test1]] || '%') ESCAPE '\\'",
+			"{:TEST} NOT LIKE ('%' || [[test1]]::text || '%') ESCAPE '\\'",
 		},
 		{
 			"like with left column operand and text as right operand",
 			"test1 !~ 'lorem'",
 			false,
-			"[[test1]] NOT LIKE {:TEST} ESCAPE '\\'",
+			"[[test1]]::text NOT LIKE {:TEST} ESCAPE '\\'",
 		},
 		{
 			"nested json no coalesce",
 			"test5.a = test5.b || test5.c != test5.d",
 			false,
-			"(JSON_EXTRACT([[test5]], '$.a') IS JSON_EXTRACT([[test5]], '$.b') OR JSON_EXTRACT([[test5]], '$.c') IS NOT JSON_EXTRACT([[test5]], '$.d'))",
+			"(JSON_EXTRACT([[test5]], '$.a') IS NOT DISTINCT FROM JSON_EXTRACT([[test5]], '$.b') OR JSON_EXTRACT([[test5]], '$.c') IS DISTINCT FROM JSON_EXTRACT([[test5]], '$.d'))",
 		},
 		{
 			"macros",
@@ -126,25 +164,25 @@ func TestFilterDataBuildExpr(t *testing.T) {
 			"complex expression",
 			"((test1 > 1) || (test2 != 2)) && test3 ~ '%%example' && test4_sub = null",
 			false,
-			"(([[test1]] > {:TEST} OR [[test2]] IS NOT {:TEST}) AND [[test3]] LIKE {:TEST} ESCAPE '\\' AND ([[test4_sub]] = '' OR [[test4_sub]] IS NULL))",
+			"(([[test1]] > 1 OR [[test2]] IS DISTINCT FROM 2) AND [[test3]]::text LIKE {:TEST} ESCAPE '\\' AND ([[test4_sub]]::text = '' OR [[test4_sub]] IS NULL))",
 		},
 		{
 			"combination of special literals (null, true, false)",
 			"test1=true && test2 != false && null = test3 || null != test4_sub",
 			false,
-			"([[test1]] = 1 AND [[test2]] IS NOT 0 AND ('' = [[test3]] OR [[test3]] IS NULL) OR ('' IS NOT [[test4_sub]] AND [[test4_sub]] IS NOT NULL))",
+			"([[test1]] = TRUE AND [[test2]] IS DISTINCT FROM FALSE AND ('' = [[test3]]::text OR [[test3]] IS NULL) OR ('' IS DISTINCT FROM [[test4_sub]]::text AND [[test4_sub]] IS NOT NULL))",
 		},
 		{
 			"all operators",
 			"(test1 = test2 || test2 != test3) && (test2 ~ 'example' || test2 !~ '%%abc') && 'switch1%%' ~ test1 && 'switch2' !~ test2 && test3 > 1 && test3 >= 0 && test3 <= 4 && 2 < 5",
 			false,
-			"((COALESCE([[test1]], '') = COALESCE([[test2]], '') OR COALESCE([[test2]], '') IS NOT COALESCE([[test3]], '')) AND ([[test2]] LIKE {:TEST} ESCAPE '\\' OR [[test2]] NOT LIKE {:TEST} ESCAPE '\\') AND {:TEST} LIKE ('%' || [[test1]] || '%') ESCAPE '\\' AND {:TEST} NOT LIKE ('%' || [[test2]] || '%') ESCAPE '\\' AND [[test3]] > {:TEST} AND [[test3]] >= {:TEST} AND [[test3]] <= {:TEST} AND {:TEST} < {:TEST})",
+			"((to_jsonb([[test1]]) IS NOT DISTINCT FROM to_jsonb([[test2]]) OR to_jsonb([[test2]]) IS DISTINCT FROM to_jsonb([[test3]])) AND ([[test2]]::text LIKE {:TEST} ESCAPE '\\' OR [[test2]]::text NOT LIKE {:TEST} ESCAPE '\\') AND {:TEST} LIKE ('%' || [[test1]]::text || '%') ESCAPE '\\' AND {:TEST} NOT LIKE ('%' || [[test2]]::text || '%') ESCAPE '\\' AND [[test3]] > 1 AND [[test3]] >= 0 AND [[test3]] <= 4 AND 2 < 5)",
 		},
 		{
 			"geoDistance function",
 			"geoDistance(1,2,3,4) < 567",
 			false,
-			"(6371 * acos(min(1, max(-1, cos(radians({:TEST})) * cos(radians({:TEST})) * cos(radians({:TEST}) - radians({:TEST})) + sin(radians({:TEST})) * sin(radians({:TEST})))))) < {:TEST}",
+			"(6371 * acos(least(1, greatest(-1, cos(radians(2)) * cos(radians(4)) * cos(radians(3) - radians(1)) + sin(radians(2)) * sin(radians(4)))))) < 567",
 		},
 	}
 
@@ -182,11 +220,8 @@ func TestFilterDataBuildExpr(t *testing.T) {
 
 func TestFilterDataBuildExprWithParams(t *testing.T) {
 	// create a dummy db
-	sqlDB, err := sql.Open("sqlite", "file::memory:?cache=shared")
-	if err != nil {
-		t.Fatal(err)
-	}
-	db := dbx.NewFromDB(sqlDB, "sqlite")
+	db, cleanup := NewTestDBX()
+	defer cleanup()
 
 	calledQueries := []string{}
 	db.QueryLogFunc = func(ctx context.Context, t time.Duration, sql string, rows *sql.Rows, err error) {
@@ -243,7 +278,7 @@ func TestFilterDataBuildExprWithParams(t *testing.T) {
 		t.Fatalf("Expected 1 query, got %d", len(calledQueries))
 	}
 
-	expectedQuery := `SELECT * WHERE ([[test1]] = 1 OR [[test2]] = 0 OR [[test3a]] = 123.456 OR [[test3b]] = 123.456 OR ([[test4]] = '' OR [[test4]] IS NULL) OR ([[test5]] = '' OR [[test5]] IS NULL) OR [[test6]] = 'simple' OR [[test7]] = '''single_quotes''' OR [[test8]] = '"double_quotes"' OR [[test9]] = '''"quote_with_backslash\' OR [[test10]] = '2023-01-01 00:00:00 +0000 UTC' OR [[test11]] = '["a","''quote","\"quote"]' OR [[test12]] = '{"a":123,"b":"quote\""}' OR [[test13]] = 'a`
+	expectedQuery := `SELECT * WHERE ([[test1]] = TRUE OR [[test2]] = FALSE OR [[test3a]] = 123.456 OR [[test3b]] = 123.456 OR ([[test4]]::text = '' OR [[test4]] IS NULL) OR ([[test5]]::text = '' OR [[test5]] IS NULL) OR [[test6]] = 'simple' OR [[test7]] = '''single_quotes''' OR [[test8]] = '"double_quotes"' OR [[test9]] = '''"quote_with_backslash\' OR [[test10]] = '2023-01-01 00:00:00 +0000 UTC' OR [[test11]] = '["a","''quote","\"quote"]' OR [[test12]] = '{"a":123,"b":"quote\""}' OR [[test13]] = 'a`
 	expectedQuery += "\nb')"
 	if expectedQuery != calledQueries[0] {
 		t.Fatalf("Expected query \n%s, \ngot \n%s", expectedQuery, calledQueries[0])
@@ -313,11 +348,8 @@ func TestFilterDataBuildExprWithLimit(t *testing.T) {
 
 func TestLikeParamsWrapping(t *testing.T) {
 	// create a dummy db
-	sqlDB, err := sql.Open("sqlite", "file::memory:?cache=shared")
-	if err != nil {
-		t.Fatal(err)
-	}
-	db := dbx.NewFromDB(sqlDB, "sqlite")
+	db, cleanup := NewTestDBX()
+	defer cleanup()
 
 	calledQueries := []string{}
 	db.QueryLogFunc = func(ctx context.Context, t time.Duration, sql string, rows *sql.Rows, err error) {
@@ -372,7 +404,7 @@ func TestLikeParamsWrapping(t *testing.T) {
 		t.Fatalf("Expected 1 query, got %d", len(calledQueries))
 	}
 
-	expectedQuery := `SELECT * WHERE ([[test1]] LIKE '%abc%' ESCAPE '\' OR [[test2]] LIKE 'ab%c' ESCAPE '\' OR [[test3]] LIKE '%ab\%c%' ESCAPE '\' OR [[test4]] LIKE '%ab\%c' ESCAPE '\' OR [[test5]] LIKE 'ab\\%c' ESCAPE '\' OR [[test6]] LIKE '%ab\\\%c%' ESCAPE '\' OR [[test7]] LIKE '%ab\_c%' ESCAPE '\' OR [[test8]] LIKE '%ab\_c%' ESCAPE '\' OR [[test9]] LIKE '%ab_c' ESCAPE '\' OR [[test10]] LIKE '%ab\\c%' ESCAPE '\' OR [[test11]] LIKE '%\_ab\\c\_%' ESCAPE '\' OR [[test12]] LIKE 'ab\c%' ESCAPE '\' OR [[test13]] LIKE '%a`
+	expectedQuery := `SELECT * WHERE ([[test1]]::text LIKE '%abc%' ESCAPE '\' OR [[test2]]::text LIKE 'ab%c' ESCAPE '\' OR [[test3]]::text LIKE '%ab\%c%' ESCAPE '\' OR [[test4]]::text LIKE '%ab\%c' ESCAPE '\' OR [[test5]]::text LIKE 'ab\\%c' ESCAPE '\' OR [[test6]]::text LIKE '%ab\\\%c%' ESCAPE '\' OR [[test7]]::text LIKE '%ab\_c%' ESCAPE '\' OR [[test8]]::text LIKE '%ab\_c%' ESCAPE '\' OR [[test9]]::text LIKE '%ab_c' ESCAPE '\' OR [[test10]]::text LIKE '%ab\\c%' ESCAPE '\' OR [[test11]]::text LIKE '%\_ab\\c\_%' ESCAPE '\' OR [[test12]]::text LIKE 'ab\c%' ESCAPE '\' OR [[test13]]::text LIKE '%a`
 	expectedQuery += "\n" + `b\\%' ESCAPE '\')`
 	if expectedQuery != calledQueries[0] {
 		t.Fatalf("Expected query \n%s, \ngot \n%s", expectedQuery, calledQueries[0])

@@ -46,7 +46,8 @@ func (app *BaseApp) LogsStats(expr dbx.Expression) ([]*LogsStatsItem, error) {
 	// PostgreSQL:
 	query := app.LogQuery().
 		Select("count(id) as total", "to_char(created, 'YYYY-MM-DD HH24:00:00') as date").
-		GroupBy("date")
+		GroupBy("date").
+		OrderBy("date")
 
 	if expr != nil {
 		query.AndWhere(expr)

@@ -401,7 +401,9 @@ func TestBaseAppLoggerWritesAwaited(t *testing.T) {
 	})
 
 	t.Run("batch flush inside aux transaction shouldn't hang", func(t *testing.T) {
-		timeout := time.After(1 * time.Second)
+		// PostgreSQL: increase the timeout since batched remote inserts
+		// are slower but should still complete without deadlocking.
+		timeout := time.After(120 * time.Second)
 		done := make(chan struct{})
 		totalCreated := 0
 
@@ -537,9 +539,12 @@ func TestBaseAppDBDualBuilder(t *testing.T) {
 		isConcurrent bool
 	}
 
+	// PostgreSQL: concurrentDB and nonconcurrentDB share the same *dbx.DB pool,
+	// so the nonconcurrent log funcs overwrite the concurrent ones and all
+	// queries are recorded as nonconcurrent.
 	regularTests := []testQuery{
-		{"  \n  sEleCt 1", true},
-		{"With abc(x) AS (select 2) SELECT x FROM abc", true},
+		{"  \n  sEleCt 1", false},
+		{"With abc(x) AS (select 2) SELECT x FROM abc", false},
 		{"create table t1(x int)", false},
 		{"insert into t1(x) values(1)", false},
 		{"update t1 set x = 2", false},
@@ -613,9 +618,12 @@ func TestBaseAppAuxDBDualBuilder(t *testing.T) {
 		isConcurrent bool
 	}
 
+	// PostgreSQL: concurrentDB and nonconcurrentDB share the same *dbx.DB pool,
+	// so the nonconcurrent log funcs overwrite the concurrent ones and all
+	// queries are recorded as nonconcurrent.
 	regularTests := []testQuery{
-		{"  \n  sEleCt 1", true},
-		{"With abc(x) AS (select 2) SELECT x FROM abc", true},
+		{"  \n  sEleCt 1", false},
+		{"With abc(x) AS (select 2) SELECT x FROM abc", false},
 		{"create table t1(x int)", false},
 		{"insert into t1(x) values(1)", false},
 		{"update t1 set x = 2", false},

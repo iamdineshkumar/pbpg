@@ -1585,67 +1585,67 @@ func TestCollectionSaveViewWrapping(t *testing.T) {
 		{
 			"no wrapping - id field",
 			"select id, bool from demo1",
-			"CREATE VIEW `test_wrapping` AS SELECT * FROM (select id, bool from demo1)",
+			" SELECT id,\n    bool\n   FROM ( SELECT demo1.id,\n            demo1.bool\n           FROM demo1) unnamed_subquery;",
 		},
 		{
 			"no wrapping - text field",
 			"select text as id, bool from demo1 limit 0",
-			"CREATE VIEW `test_wrapping` AS SELECT * FROM (select text as id, bool from demo1 limit 0)",
+			" SELECT id,\n    bool\n   FROM ( SELECT demo1.text AS id,\n            demo1.bool\n           FROM demo1\n         LIMIT 0) unnamed_subquery;",
 		},
 		{
 			"no wrapping - relation field",
 			"select rel_one as id, bool from demo1 limit 0",
-			"CREATE VIEW `test_wrapping` AS SELECT * FROM (select rel_one as id, bool from demo1 limit 0)",
+			" SELECT id,\n    bool\n   FROM ( SELECT demo1.rel_one AS id,\n            demo1.bool\n           FROM demo1\n         LIMIT 0) unnamed_subquery;",
 		},
 		{
 			"no wrapping - select field",
 			"select select_many as id, bool from demo1 limit 0",
-			"CREATE VIEW `test_wrapping` AS SELECT * FROM (select select_many as id, bool from demo1 limit 0)",
+			" SELECT id,\n    bool\n   FROM ( SELECT demo1.select_many AS id,\n            demo1.bool\n           FROM demo1\n         LIMIT 0) unnamed_subquery;",
 		},
 		{
 			"no wrapping - email field",
 			"select email as id, bool from demo1 limit 0",
-			"CREATE VIEW `test_wrapping` AS SELECT * FROM (select email as id, bool from demo1 limit 0)",
+			" SELECT id,\n    bool\n   FROM ( SELECT demo1.email AS id,\n            demo1.bool\n           FROM demo1\n         LIMIT 0) unnamed_subquery;",
 		},
 		{
 			"no wrapping - datetime field",
 			"select datetime as id, bool from demo1 limit 0",
-			"CREATE VIEW `test_wrapping` AS SELECT * FROM (select datetime as id, bool from demo1 limit 0)",
+			" SELECT id,\n    bool\n   FROM ( SELECT demo1.datetime AS id,\n            demo1.bool\n           FROM demo1\n         LIMIT 0) unnamed_subquery;",
 		},
 		{
 			"no wrapping - url field",
 			"select url as id, bool from demo1 limit 0",
-			"CREATE VIEW `test_wrapping` AS SELECT * FROM (select url as id, bool from demo1 limit 0)",
+			" SELECT id,\n    bool\n   FROM ( SELECT demo1.url AS id,\n            demo1.bool\n           FROM demo1\n         LIMIT 0) unnamed_subquery;",
 		},
 		{
 			"wrapping - bool field",
 			"select bool as id, text as txt, url from demo1 limit 0",
-			"CREATE VIEW `test_wrapping` AS SELECT * FROM (SELECT CAST(`id` as TEXT) `id`,`txt`,`url` FROM (select bool as id, text as txt, url from demo1 limit 0))",
+			" SELECT id,\n    txt,\n    url\n   FROM ( SELECT (unnamed_subquery_1.id)::text AS id,\n            unnamed_subquery_1.txt,\n            unnamed_subquery_1.url\n           FROM ( SELECT demo1.bool AS id,\n                    demo1.text AS txt,\n                    demo1.url\n                   FROM demo1\n                 LIMIT 0) unnamed_subquery_1) unnamed_subquery;",
 		},
 		{
 			"wrapping - bool field (different order)",
 			"select text as txt, url, bool as id from demo1 limit 0",
-			"CREATE VIEW `test_wrapping` AS SELECT * FROM (SELECT `txt`,`url`,CAST(`id` as TEXT) `id` FROM (select text as txt, url, bool as id from demo1 limit 0))",
+			" SELECT txt,\n    url,\n    id\n   FROM ( SELECT unnamed_subquery_1.txt,\n            unnamed_subquery_1.url,\n            (unnamed_subquery_1.id)::text AS id\n           FROM ( SELECT demo1.text AS txt,\n                    demo1.url,\n                    demo1.bool AS id\n                   FROM demo1\n                 LIMIT 0) unnamed_subquery_1) unnamed_subquery;",
 		},
 		{
 			"wrapping - json field",
 			"select json as id, text, url from demo1 limit 0",
-			"CREATE VIEW `test_wrapping` AS SELECT * FROM (SELECT CAST(`id` as TEXT) `id`,`text`,`url` FROM (select json as id, text, url from demo1 limit 0))",
+			" SELECT id,\n    text,\n    url\n   FROM ( SELECT (unnamed_subquery_1.id)::text AS id,\n            unnamed_subquery_1.text,\n            unnamed_subquery_1.url\n           FROM ( SELECT demo1.\"json\" AS id,\n                    demo1.text,\n                    demo1.url\n                   FROM demo1\n                 LIMIT 0) unnamed_subquery_1) unnamed_subquery;",
 		},
 		{
 			"wrapping - numeric id",
 			"select 1 as id",
-			"CREATE VIEW `test_wrapping` AS SELECT * FROM (SELECT CAST(`id` as TEXT) `id` FROM (select 1 as id))",
+			" SELECT id\n   FROM ( SELECT (unnamed_subquery_1.id)::text AS id\n           FROM ( SELECT 1 AS id) unnamed_subquery_1) unnamed_subquery;",
 		},
 		{
 			"wrapping - expresion",
 			"select ('test') as id",
-			"CREATE VIEW `test_wrapping` AS SELECT * FROM (SELECT CAST(`id` as TEXT) `id` FROM (select ('test') as id))",
+			" SELECT id\n   FROM ( SELECT 'test'::text AS id) unnamed_subquery;",
 		},
 		{
 			"no wrapping - cast as text",
 			"select cast('test' as text) as id",
-			"CREATE VIEW `test_wrapping` AS SELECT * FROM (select cast('test' as text) as id)",
+			" SELECT id\n   FROM ( SELECT 'test'::text AS id) unnamed_subquery;",
 		},
 	}
 

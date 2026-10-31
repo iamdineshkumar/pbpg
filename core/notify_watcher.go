@@ -76,7 +76,9 @@ func (app *BaseApp) registerNotifyWatcherHooks() {
 			if err := os.WriteFile(settingsFile, nil, 0644); err != nil {
 				e.App.Logger().Warn("Failed to write watcher file", "error", err, "file", settingsFile)
 			}
-			_ = os.Remove(settingsFile)
+			// note: don't remove the file right away because a create+remove in
+			// a quick succession could be coalesced into a single remove-flagged
+			// fsnotify event that the watcher loop would skip
 		}
 
 		return nil
@@ -103,7 +105,9 @@ func (app *BaseApp) registerNotifyWatcherHooks() {
 			if err := os.WriteFile(collectionsFile, nil, 0644); err != nil {
 				e.App.Logger().Warn("Failed to write watcher file", "error", err, "file", collectionsFile)
 			}
-			_ = os.Remove(collectionsFile)
+			// note: don't remove the file right away because a create+remove in
+			// a quick succession could be coalesced into a single remove-flagged
+			// fsnotify event that the watcher loop would skip
 		}
 
 		return nil

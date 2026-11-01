@@ -7,9 +7,9 @@ import (
 	"slices"
 	"strings"
 
+	validation "ganigeorgiev.com/pocketbase/ozzo-validation/v4"
 	"github.com/jackc/pgx/v5/pgconn"
 	"github.com/postgresbase/dbx"
-	validation "ganigeorgiev.com/pocketbase/ozzo-validation/v4"
 )
 
 // UniqueId checks whether a field string id already exists in the specified table.
@@ -83,7 +83,7 @@ func NormalizeUniqueIndexError(err error, tableOrAlias string, fieldNames []stri
 	// check for unique constraint failure
 	// PostgreSQL:
 	if pgErr, ok := err.(*pgconn.PgError); ok {
-		if pgErr.Code == "23505" {
+		if pgErr.Code == "23505" && pgErr.TableName == tableOrAlias {
 			normalizedErrs := validation.Errors{}
 
 			columns := extractColumnsFromPgErrorUniqueViolation(pgErr.Detail)

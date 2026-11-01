@@ -2,9 +2,12 @@ package pocketbase
 
 import (
 	"os"
+	"os/exec"
 	"path/filepath"
 	"testing"
 
+	"github.com/postgresbase/pocketbase/core"
+	"github.com/postgresbase/pocketbase/tools/security"
 	"github.com/spf13/cobra"
 )
 
@@ -143,7 +146,19 @@ func TestSkipBootstrap(t *testing.T) {
 	defer os.RemoveAll(tempDir)
 
 	// already bootstrapped
-	app0 := NewWithConfig(Config{DefaultDataDir: tempDir})
+	creds := core.TestPostgresCredentials()
+	dataDb := "pb_test_skip_data_" + security.PseudorandomString(5)
+	auxDb := "pb_test_skip_aux_" + security.PseudorandomString(5)
+	defer func() {
+		exec.Command("sh", "-c", creds.DropdbCommand(dataDb)).Run()
+		exec.Command("sh", "-c", creds.DropdbCommand(auxDb)).Run()
+	}()
+	app0 := NewWithConfig(Config{
+		DefaultDataDir:        tempDir,
+		DefaultPostgresURL:    core.TestPostgresURL(),
+		DefaultPostgresDataDb: dataDb,
+		DefaultPostgresAuxDb:  auxDb,
+	})
 	app0.Bootstrap()
 	if v := app0.skipBootstrap(); !v {
 		t.Fatal("[bootstrapped] Expected true, got false")

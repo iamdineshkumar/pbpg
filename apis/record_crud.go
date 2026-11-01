@@ -298,7 +298,17 @@ func recordCreate(responseWriteAfterTx bool, optFinalizer func(data any) error) 
 				k = inflector.Columnify(k) // columnify is just as extra measure in case of custom fields
 				param = "__pb_create__" + k
 				dummyParams[param] = v
-				selects = append(selects, "{:"+param+"} AS [["+k+"]]")
+				// PostgreSQL: untyped literal params default to text which
+				// pgx cannot encode Go bools/numbers into, so cast them to
+				// the matching column type instead
+				switch v.(type) {
+				case bool:
+					selects = append(selects, "CAST({:"+param+"} AS bool) AS [["+k+"]]")
+				case int, int8, int16, int32, int64, uint, uint8, uint16, uint32, uint64, float32, float64:
+					selects = append(selects, "CAST({:"+param+"} AS numeric) AS [["+k+"]]")
+				default:
+					selects = append(selects, "{:"+param+"} AS [["+k+"]]")
+				}
 			}
 
 			// shallow clone the current collection

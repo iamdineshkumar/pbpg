@@ -399,6 +399,13 @@ func (r *RecordFieldResolver) loadCollection(collectionNameOrId string) (*Collec
 }
 
 func (r *RecordFieldResolver) registerJoin(tableName string, tableAlias string, on dbx.Expression) error {
+	// PostgreSQL requires an explicit ON clause for LEFT JOIN, so for
+	// nil ON expressions we fallback to a "cross" join (same as SQLite
+	// which doesn't require ON at all)
+	if on == nil {
+		on = dbx.NewExp("1 = 1")
+	}
+
 	newJoin := &search.Join{
 		TableName:  tableName,
 		TableAlias: tableAlias,

@@ -55,6 +55,10 @@ func (m *MultiMatchSubquery) Build(db *dbx.DB, params dbx.Params) string {
 		if j.On != nil {
 			mergedJoins.WriteString(" ON ")
 			mergedJoins.WriteString(j.On.Build(db, params))
+		} else {
+			// PostgreSQL requires an explicit ON clause for LEFT JOIN,
+			// so fallback to a "cross" join (same as SQLite)
+			mergedJoins.WriteString(" ON 1 = 1")
 		}
 	}
 

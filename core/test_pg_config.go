@@ -70,7 +70,7 @@ func TestPostgresCredentials() TestPostgresCreds {
 
 // PgEnvCommand returns a shell prefix string with PGPASSWORD set.
 func (c TestPostgresCreds) PgEnvCommand() string {
-	return fmt.Sprintf("PGPASSWORD=%s ", c.Password)
+	return fmt.Sprintf("PGPASSWORD=%s PGCONNECT_TIMEOUT=15 ", c.Password)
 }
 
 // CreatedbCommand returns a shell command string to create the given database.
@@ -80,7 +80,7 @@ func (c TestPostgresCreds) CreatedbCommand(dbName string) string {
 
 // DropdbCommand returns a shell command string to drop the given database (if exists).
 func (c TestPostgresCreds) DropdbCommand(dbName string) string {
-	return fmt.Sprintf("%sdropdb --if-exists -h %s -p %s -U %s %s", c.PgEnvCommand(), c.Host, c.Port, c.User, dbName)
+	return fmt.Sprintf("%sdropdb --if-exists --force -h %s -p %s -U %s %s", c.PgEnvCommand(), c.Host, c.Port, c.User, dbName)
 }
 
 // PsqlCommand returns a shell command string to run a psql file import.

@@ -131,8 +131,8 @@ migrate((app) => {
     "id": "@TEST_RANDOM",
     "indexes": [
       "create index test on new_name (id)",
-      "CREATE UNIQUE INDEX ` + "`" + `idx_tokenKey_@TEST_RANDOM` + "`" + ` ON ` + "`" + `new_name` + "`" + ` (` + "`" + `tokenKey` + "`" + `)",
-      "CREATE UNIQUE INDEX ` + "`" + `idx_email_@TEST_RANDOM` + "`" + ` ON ` + "`" + `new_name` + "`" + ` (` + "`" + `email` + "`" + `) WHERE ` + "`" + `email` + "`" + ` != ''"
+      "CREATE UNIQUE INDEX \"idx_tokenKey_@TEST_RANDOM\" ON \"new_name\" (\"tokenKey\")",
+      "CREATE UNIQUE INDEX \"idx_email_@TEST_RANDOM\" ON \"new_name\" (\"email\") WHERE \"email\" != ''"
     ],
     "listRule": "@request.auth.id != '' && 1 > 0 || 'backtick` + "`" + `test' = 0",
     "manageRule": "1 != 2",
@@ -313,8 +313,8 @@ func init() {
 			"id": "@TEST_RANDOM",
 			"indexes": [
 				"create index test on new_name (id)",
-				"CREATE UNIQUE INDEX ` + "` + \"`\" + `" + `idx_tokenKey_@TEST_RANDOM` + "` + \"`\" + `" + ` ON ` + "` + \"`\" + `" + `new_name` + "` + \"`\" + `" + ` (` + "` + \"`\" + `" + `tokenKey` + "` + \"`\" + `" + `)",
-				"CREATE UNIQUE INDEX ` + "` + \"`\" + `" + `idx_email_@TEST_RANDOM` + "` + \"`\" + `" + ` ON ` + "` + \"`\" + `" + `new_name` + "` + \"`\" + `" + ` (` + "` + \"`\" + `" + `email` + "` + \"`\" + `" + `) WHERE ` + "` + \"`\" + `" + `email` + "` + \"`\" + `" + ` != ''"
+				"CREATE UNIQUE INDEX \"idx_tokenKey_@TEST_RANDOM\" ON \"new_name\" (\"tokenKey\")",
+				"CREATE UNIQUE INDEX \"idx_email_@TEST_RANDOM\" ON \"new_name\" (\"email\") WHERE \"email\" != ''"
 			],
 			"listRule": "@request.auth.id != '' && 1 > 0 || 'backtick` + "` + \"`\" + `" + `test' = 0",
 			"manageRule": "1 != 2",
@@ -584,8 +584,8 @@ migrate((app) => {
     "id": "@TEST_RANDOM",
     "indexes": [
       "create index test on test123 (id)",
-      "CREATE UNIQUE INDEX ` + "`" + `idx_tokenKey_@TEST_RANDOM` + "`" + ` ON ` + "`" + `test123` + "`" + ` (` + "`" + `tokenKey` + "`" + `)",
-      "CREATE UNIQUE INDEX ` + "`" + `idx_email_@TEST_RANDOM` + "`" + ` ON ` + "`" + `test123` + "`" + ` (` + "`" + `email` + "`" + `) WHERE ` + "`" + `email` + "`" + ` != ''"
+      "CREATE UNIQUE INDEX \"idx_tokenKey_@TEST_RANDOM\" ON \"test123\" (\"tokenKey\")",
+      "CREATE UNIQUE INDEX \"idx_email_@TEST_RANDOM\" ON \"test123\" (\"email\") WHERE \"email\" != ''"
     ],
     "listRule": "@request.auth.id != '' && 1 > 0 || 'backtick` + "`" + `test' = 0",
     "manageRule": "1 != 2",
@@ -769,8 +769,8 @@ func init() {
 			"id": "@TEST_RANDOM",
 			"indexes": [
 				"create index test on test123 (id)",
-				"CREATE UNIQUE INDEX ` + "` + \"`\" + `" + `idx_tokenKey_@TEST_RANDOM` + "` + \"`\" + `" + ` ON ` + "` + \"`\" + `" + `test123` + "` + \"`\" + `" + ` (` + "` + \"`\" + `" + `tokenKey` + "` + \"`\" + `" + `)",
-				"CREATE UNIQUE INDEX ` + "` + \"`\" + `" + `idx_email_@TEST_RANDOM` + "` + \"`\" + `" + ` ON ` + "` + \"`\" + `" + `test123` + "` + \"`\" + `" + ` (` + "` + \"`\" + `" + `email` + "` + \"`\" + `" + `) WHERE ` + "` + \"`\" + `" + `email` + "` + \"`\" + `" + ` != ''"
+				"CREATE UNIQUE INDEX \"idx_tokenKey_@TEST_RANDOM\" ON \"test123\" (\"tokenKey\")",
+				"CREATE UNIQUE INDEX \"idx_email_@TEST_RANDOM\" ON \"test123\" (\"email\") WHERE \"email\" != ''"
 			],
 			"listRule": "@request.auth.id != '' && 1 > 0 || 'backtick` + "` + \"`\" + `" + `test' = 0",
 			"manageRule": "1 != 2",
@@ -930,8 +930,8 @@ migrate((app) => {
     },
     "indexes": [
       "create index test1 on test123_update (f1_name)",
-      "CREATE UNIQUE INDEX ` + "`" + `idx_tokenKey_@TEST_RANDOM` + "`" + ` ON ` + "`" + `test123_update` + "`" + ` (` + "`" + `tokenKey` + "`" + `)",
-      "CREATE UNIQUE INDEX ` + "`" + `idx_email_@TEST_RANDOM` + "`" + ` ON ` + "`" + `test123_update` + "`" + ` (` + "`" + `email` + "`" + `) WHERE ` + "`" + `email` + "`" + ` != ''"
+      "CREATE UNIQUE INDEX \"idx_tokenKey_@TEST_RANDOM\" ON \"test123_update\" (\"tokenKey\")",
+      "CREATE UNIQUE INDEX \"idx_email_@TEST_RANDOM\" ON \"test123_update\" (\"email\") WHERE \"email\" != ''"
     ],
     "listRule": "@request.auth.id != ''",
     "name": "test123_update",
@@ -989,8 +989,8 @@ migrate((app) => {
     },
     "indexes": [
       "create index test1 on test123 (f1_name)",
-      "CREATE UNIQUE INDEX ` + "`" + `idx_tokenKey_@TEST_RANDOM` + "`" + ` ON ` + "`" + `test123` + "`" + ` (` + "`" + `tokenKey` + "`" + `)",
-      "CREATE UNIQUE INDEX ` + "`" + `idx_email_@TEST_RANDOM` + "`" + ` ON ` + "`" + `test123` + "`" + ` (` + "`" + `email` + "`" + `) WHERE ` + "`" + `email` + "`" + ` != ''"
+      "CREATE UNIQUE INDEX \"idx_tokenKey_@TEST_RANDOM\" ON \"test123\" (\"tokenKey\")",
+      "CREATE UNIQUE INDEX \"idx_email_@TEST_RANDOM\" ON \"test123\" (\"email\") WHERE \"email\" != ''"
     ],
     "listRule": "@request.auth.id != '' && 1 != 2",
     "name": "test123",
@@ -1063,8 +1063,8 @@ func init() {
 			},
 			"indexes": [
 				"create index test1 on test123_update (f1_name)",
-				"CREATE UNIQUE INDEX ` + "` + \"`\" + `" + `idx_tokenKey_@TEST_RANDOM` + "` + \"`\" + `" + ` ON ` + "` + \"`\" + `" + `test123_update` + "` + \"`\" + `" + ` (` + "` + \"`\" + `" + `tokenKey` + "` + \"`\" + `" + `)",
-				"CREATE UNIQUE INDEX ` + "` + \"`\" + `" + `idx_email_@TEST_RANDOM` + "` + \"`\" + `" + ` ON ` + "` + \"`\" + `" + `test123_update` + "` + \"`\" + `" + ` (` + "` + \"`\" + `" + `email` + "` + \"`\" + `" + `) WHERE ` + "` + \"`\" + `" + `email` + "` + \"`\" + `" + ` != ''"
+				"CREATE UNIQUE INDEX \"idx_tokenKey_@TEST_RANDOM\" ON \"test123_update\" (\"tokenKey\")",
+				"CREATE UNIQUE INDEX \"idx_email_@TEST_RANDOM\" ON \"test123_update\" (\"email\") WHERE \"email\" != ''"
 			],
 			"listRule": "@request.auth.id != ''",
 			"name": "test123_update",
@@ -1131,8 +1131,8 @@ func init() {
 			},
 			"indexes": [
 				"create index test1 on test123 (f1_name)",
-				"CREATE UNIQUE INDEX ` + "` + \"`\" + `" + `idx_tokenKey_@TEST_RANDOM` + "` + \"`\" + `" + ` ON ` + "` + \"`\" + `" + `test123` + "` + \"`\" + `" + ` (` + "` + \"`\" + `" + `tokenKey` + "` + \"`\" + `" + `)",
-				"CREATE UNIQUE INDEX ` + "` + \"`\" + `" + `idx_email_@TEST_RANDOM` + "` + \"`\" + `" + ` ON ` + "` + \"`\" + `" + `test123` + "` + \"`\" + `" + ` (` + "` + \"`\" + `" + `email` + "` + \"`\" + `" + `) WHERE ` + "` + \"`\" + `" + `email` + "` + \"`\" + `" + ` != ''"
+				"CREATE UNIQUE INDEX \"idx_tokenKey_@TEST_RANDOM\" ON \"test123\" (\"tokenKey\")",
+				"CREATE UNIQUE INDEX \"idx_email_@TEST_RANDOM\" ON \"test123\" (\"email\") WHERE \"email\" != ''"
 			],
 			"listRule": "@request.auth.id != '' && 1 != 2",
 			"name": "test123",

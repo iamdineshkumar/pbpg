@@ -563,6 +563,7 @@ COPY public._otps ("collectionRef", created, id, password, "recordRef", updated,
 --
 
 COPY public._params (created, id, updated, value) FROM stdin;
+2022-12-16 17:27:00.000Z	settings	2022-12-16 17:27:00.000Z	{"superuserIPs":[],"smtp":{"enabled":false,"port":587,"host":"smtp.example.com","username":"","password":"","authMethod":"","tls":false,"localName":""},"backups":{"cron":"","cronMaxKeep":0,"s3":{"enabled":false,"bucket":"","region":"","endpoint":"","accessKey":"","forcePathStyle":false}},"s3":{"enabled":false,"bucket":"","region":"","endpoint":"","accessKey":"","forcePathStyle":false},"meta":{"accentColor":"#1055c9","appName":"acme_test","appURL":"http://localhost:8090","senderName":"Support","senderAddress":"support@example.com","hideControls":false},"rateLimits":{"rules":[{"label":"*:auth","audience":"","duration":3,"maxRequests":2},{"label":"*:create","audience":"","duration":5,"maxRequests":20},{"label":"/api/batch","audience":"","duration":1,"maxRequests":3},{"label":"/api/","audience":"","duration":10,"maxRequests":300}],"excludedIPs":[],"enabled":false},"trustedProxy":{"headers":[],"useLeftmostIP":false},"batch":{"enabled":true,"maxRequests":50,"timeout":5,"maxBodySize":0},"logs":{"maxDays":5,"minLevel":0,"logIP":false,"logAuthId":false}}
 \.
 
 

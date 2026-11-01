@@ -1575,7 +1575,19 @@ func (app *BaseApp) registerBaseHooks() {
 		}
 	})
 	*/
-	// PostgreSQL: no equivalent PRAGMA operations needed
+	// PostgreSQL: ANALYZE is the rough equivalent of PRAGMA optimize;
+	// the WAL checkpoint has no direct counterpart since PG manages WAL automatically
+	app.Cron().Add("__pbDBOptimize__", "0 0 * * *", func() {
+		_, execErr := app.NonconcurrentDB().NewQuery("ANALYZE").Execute()
+		if execErr != nil {
+			app.Logger().Warn("Failed to run periodic ANALYZE for the main DB", slog.String("error", execErr.Error()))
+		}
+
+		_, execErr = app.AuxNonconcurrentDB().NewQuery("ANALYZE").Execute()
+		if execErr != nil {
+			app.Logger().Warn("Failed to run periodic ANALYZE for the auxiliary DB", slog.String("error", execErr.Error()))
+		}
+	})
 
 	app.registerSettingsHooks()
 	app.registerAutobackupHooks()

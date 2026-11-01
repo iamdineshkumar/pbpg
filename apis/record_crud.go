@@ -79,9 +79,13 @@ func recordsList(e *core.RequestEvent) error {
 
 	searchProvider := search.NewProvider(fieldsResolver).Query(query)
 
-	// use rowid when available to minimize the need of a covering index with the "id" field
+	// use ctid (PostgreSQL physical row identifier) when available to minimize the need of a covering index with the "id" field
 	if !collection.IsView() {
+		/* SQLite:
 		searchProvider.CountCol("_rowid_")
+		*/
+		// PostgreSQL:
+		searchProvider.CountCol("ctid")
 	}
 
 	records := []*core.Record{}

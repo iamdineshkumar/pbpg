@@ -81,7 +81,7 @@ func TestRecordRequestOTP(t *testing.T) {
 			Method:         http.MethodPost,
 			URL:            "/api/collections/users/request-otp",
 			Body:           strings.NewReader(`{"email":"missing@example.com"}`),
-			Delay:          100 * time.Millisecond,
+			Delay:          3000 * time.Millisecond,
 			ExpectedStatus: 200,
 			ExpectedContent: []string{
 				`"otpId":"`, // some fake random generated string
@@ -101,7 +101,7 @@ func TestRecordRequestOTP(t *testing.T) {
 			Method: http.MethodPost,
 			URL:    "/api/collections/users/request-otp",
 			Body:   strings.NewReader(`{"email":"test@example.com"}`),
-			Delay:  100 * time.Millisecond,
+			Delay:  3000 * time.Millisecond,
 			BeforeTestFunc: func(t testing.TB, app *tests.TestApp, e *core.ServeEvent) {
 				user, err := app.FindAuthRecordByEmail("users", "test@example.com")
 				if err != nil {
@@ -170,7 +170,7 @@ func TestRecordRequestOTP(t *testing.T) {
 			Method: http.MethodPost,
 			URL:    "/api/collections/users/request-otp",
 			Body:   strings.NewReader(`{"email":"test@example.com"}`),
-			Delay:  100 * time.Millisecond,
+			Delay:  3000 * time.Millisecond,
 			BeforeTestFunc: func(t testing.TB, app *tests.TestApp, e *core.ServeEvent) {
 				// prevent email sent
 				app.OnMailerRecordOTPSend("users").BindFunc(func(e *core.MailerRecordEvent) error {
@@ -214,7 +214,7 @@ func TestRecordRequestOTP(t *testing.T) {
 			Method: http.MethodPost,
 			URL:    "/api/collections/users/request-otp",
 			Body:   strings.NewReader(`{"email":"test@example.com"}`),
-			Delay:  100 * time.Millisecond,
+			Delay:  3000 * time.Millisecond,
 			BeforeTestFunc: func(t testing.TB, app *tests.TestApp, e *core.ServeEvent) {
 				user, err := app.FindAuthRecordByEmail("users", "test@example.com")
 				if err != nil {
@@ -252,7 +252,7 @@ func TestRecordRequestOTP(t *testing.T) {
 			Method: http.MethodPost,
 			URL:    "/api/collections/users/request-otp",
 			Body:   strings.NewReader(`{"email":"test@example.com"}`),
-			Delay:  100 * time.Millisecond,
+			Delay:  3000 * time.Millisecond,
 			BeforeTestFunc: func(t testing.TB, app *tests.TestApp, e *core.ServeEvent) {
 				app.OnRecordRequestOTPRequest().BindFunc(func(e *core.RecordCreateOTPRequestEvent) error {
 					original := e.App

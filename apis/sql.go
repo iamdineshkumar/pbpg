@@ -5,10 +5,12 @@ import (
 	"errors"
 	"log/slog"
 	"net/http"
+	"net/url"
 	"strings"
 	"time"
 
 	validation "ganigeorgiev.com/pocketbase/ozzo-validation/v4"
+	"github.com/jackc/pgx/v5"
 	"github.com/postgresbase/pocketbase/core"
 	"github.com/postgresbase/pocketbase/tools/router"
 )
@@ -141,6 +143,16 @@ func executeQuery(app core.App, query string, maxRows int) (*runSQLResult, error
 
 	// assume query returning rows
 	// ---------------------------------------------------------------
+	// PostgreSQL: multi-statement queries (e.g. "select 1;select 2") are
+	// rejected by the pgx extended protocol, so they are executed over a
+	// dedicated connection via the pgconn simple protocol Exec which
+	// materializes all result sets - only the last one is returned to
+	// match the upstream SQLite behavior
+	if app.PostgresURL() != "" {
+		return executePgxRowsQuery(ctx, app, query, maxRows, result)
+	}
+
+	/* SQLite fallback:
 	rows, err := app.ConcurrentDB().NewQuery(query).WithContext(ctx).Rows()
 	if err != nil {
 		return nil, err
@@ -188,6 +200,61 @@ func executeQuery(app core.App, query string, maxRows int) (*runSQLResult, error
 	err = rows.Err()
 	if err != nil {
 		return nil, err
+	}
+	*/
+
+	return result, nil
+}
+
+// executePgxRowsQuery executes the specified query using a dedicated pgx
+// connection with the simple query protocol (required for multi-statement
+// queries) and populates the result with the last statement's result set.
+func executePgxRowsQuery(ctx context.Context, app core.App, query string, maxRows int, result *runSQLResult) (*runSQLResult, error) {
+	u, err := url.Parse(app.PostgresURL())
+	if err != nil {
+		return nil, err
+	}
+	u.Path = app.PostgresDataDB()
+
+	conn, err := pgx.Connect(ctx, u.String())
+	if err != nil {
+		return nil, err
+	}
+	defer conn.Close(ctx)
+
+	// Exec uses the simple query protocol which allows multi-statement
+	// queries and materializes all their result sets
+	results, err := conn.PgConn().Exec(ctx, query).ReadAll()
+	if err != nil {
+		return nil, err
+	}
+
+	// only the result of the last query is returned
+	res := results[len(results)-1]
+
+	for _, field := range res.FieldDescriptions {
+		col := runSQLResultColumn{Name: field.Name}
+		if t, ok := conn.TypeMap().TypeForOID(field.DataTypeOID); ok {
+			col.Type = strings.ToUpper(t.Name)
+		}
+
+		result.Columns = append(result.Columns, col)
+	}
+
+	for _, row := range res.Rows {
+		if len(result.Rows) >= maxRows {
+			break
+		}
+
+		rowData := make([]any, len(res.FieldDescriptions))
+		for i, v := range row {
+			if v != nil {
+				s := string(v)
+				rowData[i] = &s
+			}
+		}
+
+		result.Rows = append(result.Rows, rowData)
 	}
 
 	return result, nil

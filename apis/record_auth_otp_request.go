@@ -100,12 +100,21 @@ func recordRequestOTP(e *core.RequestEvent) error {
 			// send OTP email
 			// (in the background as a very basic timing attacks and emails enumeration protection)
 			// ---
-			routine.FireAndForget(func() {
-				err = mails.SendRecordOTP(originalApp, e.Record, otp.Id, e.Password)
-				if err != nil {
-					originalApp.Logger().Error("Failed to send OTP email", "error", errors.Join(err, originalApp.Delete(otp)))
-				}
+			// note: the send is deferred until the transaction completes so that
+			// the OTP record is visible outside of it (e.g. on PostgreSQL where
+			// the tx commit is not instantaneous)
+			err = execAfterSuccessTx(true, e.App, func() error {
+				routine.FireAndForget(func() {
+					err = mails.SendRecordOTP(originalApp, e.Record, otp.Id, e.Password)
+					if err != nil {
+						originalApp.Logger().Error("Failed to send OTP email", "error", errors.Join(err, originalApp.Delete(otp)))
+					}
+				})
+				return nil
 			})
+			if err != nil {
+				return err
+			}
 		}
 
 		return execAfterSuccessTx(true, e.App, func() error {

@@ -137,7 +137,12 @@ func TestFilterDataBuildExpr(t *testing.T) {
 			"nested json no coalesce",
 			"test5.a = test5.b || test5.c != test5.d",
 			false,
-			"(JSON_EXTRACT([[test5]], '$.a') IS NOT DISTINCT FROM JSON_EXTRACT([[test5]], '$.b') OR JSON_EXTRACT([[test5]], '$.c') IS DISTINCT FROM JSON_EXTRACT([[test5]], '$.d'))",
+			/* SQLite:
+			"(JSON_EXTRACT([[test5]], '$.a') IS JSON_EXTRACT([[test5]], '$.b') OR JSON_EXTRACT([[test5]], '$.c') IS NOT JSON_EXTRACT([[test5]], '$.d'))",
+			,
+			*/
+			// PostgreSQL:
+			`(JSON_QUERY([[test5]]::jsonb, '$.a')::jsonb IS NOT DISTINCT FROM JSON_QUERY([[test5]]::jsonb, '$.b')::jsonb OR JSON_QUERY([[test5]]::jsonb, '$.c')::jsonb IS DISTINCT FROM JSON_QUERY([[test5]]::jsonb, '$.d')::jsonb)`,
 		},
 		{
 			"macros",

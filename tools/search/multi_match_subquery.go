@@ -58,7 +58,7 @@ func (m *MultiMatchSubquery) Build(db *dbx.DB, params dbx.Params) string {
 		} else {
 			// PostgreSQL requires an explicit ON clause for LEFT JOIN,
 			// so fallback to a "cross" join (same as SQLite)
-			mergedJoins.WriteString(" ON 1 = 1")
+			mergedJoins.WriteString(" ON 1=1")
 		}
 	}
 

@@ -31,7 +31,7 @@ func TestSortFieldBuildExpr(t *testing.T) {
 		// special @random field (ignore direction)
 		{search.SortField{"@random", search.SortDesc}, false, "RANDOM()"},
 		// special _rowid_ field
-		{search.SortField{"@rowid", search.SortDesc}, false, "[[_rowid_]] DESC"},
+		{search.SortField{"@rowid", search.SortDesc}, false, "[[ctid]] DESC"},
 	}
 
 	for _, s := range scenarios {
